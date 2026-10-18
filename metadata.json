@@ -1,0 +1,6 @@
+{
+  "name": "ESP32 ESPHome Touch Display Configurator",
+  "description": "Konfigurator dotykowego panelu ESP32 z ESPHome i Home Assistant: personalizacja ekranów świateł, multimediów, kalendarza oraz Bambu Lab A1 Mini.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
