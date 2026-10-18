@@ -29,6 +29,7 @@ const POLISH_MONTHS = [
   'listopada',
   'grudnia',
 ];
+const ACTIVE_ICON_COLOR = '#FBBF24';
 
 export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
   config,
@@ -492,11 +493,11 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                       } else if (widget.entityId?.startsWith('media_player.')) {
                         statusText = isActive ? 'Odtwarza' : 'Pauza';
                         statusColor = isActive ? th.accent : th.accentMuted;
-                        iconColor = isActive ? th.accent : '#64748B';
+                        iconColor = isActive ? ACTIVE_ICON_COLOR : '#64748B';
                       } else if (isToggleable) {
                         statusText = isActive ? 'WŁ.' : 'WYŁ.';
                         statusColor = isActive ? th.accent : '#64748B';
-                        iconColor = isActive ? th.accent : '#64748B';
+                        iconColor = isActive ? ACTIVE_ICON_COLOR : '#64748B';
                       } else {
                         statusText = widget.subtitle || 'Przełącznik';
                         statusColor = th.accentMuted;
@@ -580,7 +581,7 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                     const isActive = isEntityActive(widget.entityId);
                     const statusText = isActive ? 'WŁ.' : 'WYŁ.';
                     const statusColor = isActive ? th.accent : '#64748B';
-                    const iconColor = isActive ? th.accent : '#64748B';
+                    const iconColor = isActive ? ACTIVE_ICON_COLOR : '#64748B';
 
                     return (
                       <div
@@ -1489,7 +1490,7 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                           ? ((cw.entityId && entityStates[cw.entityId] !== undefined) ? `${entityStates[cw.entityId]}` : (cw.subtitle || 'Czujnik'))
                           : (isActive ? 'WŁ.' : 'WYŁ.');
                         const statusColor = isSens ? th.accentMuted : (isActive ? th.accent : '#64748B');
-                        const iconColor = isActive ? th.accent : '#64748B';
+                        const iconColor = isActive ? ACTIVE_ICON_COLOR : '#64748B';
 
                         return (
                           <div

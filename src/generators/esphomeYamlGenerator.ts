@@ -477,6 +477,7 @@ export function isTextSensorEntity(entityId: string, knownEntities?: HAEntity[])
 
 export function generateEsphomeYaml(config: ConfigProfile, knownEntities?: HAEntity[]): string {
   const hw: HardwarePreset = getHardwarePreset(config.hardwarePresetId);
+  const activeIconColor = '0xFBBF24';
   const isLandscape = config.orientation === 'landscape';
   const width = isLandscape ? Math.max(hw.resolution.width, hw.resolution.height) : Math.min(hw.resolution.width, hw.resolution.height);
   const height = isLandscape ? Math.min(hw.resolution.width, hw.resolution.height) : Math.max(hw.resolution.width, hw.resolution.height);
@@ -666,7 +667,7 @@ ${pairs.map(p => `              - lvgl.label.update:
                   text_color: ${th.accent}
               - lvgl.label.update:
                   id: ${p.iconLabelId}
-                  text_color: ${th.accent}`).join('\n')}
+                  text_color: ${activeIconColor}`).join('\n')}
             else:
 ${pairs.map(p => `              - lvgl.label.update:
                   id: ${p.statusLabelId}
@@ -1114,7 +1115,7 @@ ${quickWidgets.map((qw, qIdx) => {
   const iconLabelId = `lbl_ico_home_${qIdx}`;
   const safeSub = isSens ? 'Postęp' : qw.entityId?.startsWith('media_player.') ? (isDefaultOn ? 'Odtwarza' : 'Pauza') : (isDefaultOn ? 'WŁ.' : 'WYŁ.');
   const initSubColor = isSens ? th.accentMuted : (isDefaultOn ? th.accent : '0x64748B');
-  const initIcoColor = isDefaultOn ? th.accent : '0x64748B';
+  const initIcoColor = isDefaultOn ? activeIconColor : '0x64748B';
 
   return `        # Przycisk ${qIdx + 1}: ${qw.title}
         - button:
@@ -1168,7 +1169,8 @@ ${screen.widgets.slice(0, 6).map((sw, swIdx) => {
   const statusLabelId = `lbl_sub_lights_${swIdx}`;
   const iconLabelId = `lbl_ico_lights_${swIdx}`;
   const initStatus = isDefaultOn ? 'WŁ.' : 'WYŁ.';
-  const initColor = isDefaultOn ? th.accent : '0x64748B';
+  const initStatusColor = isDefaultOn ? th.accent : '0x64748B';
+  const initIconColor = isDefaultOn ? activeIconColor : '0x64748B';
 
   return `        # Przełącznik: ${sw.title}
         - button:
@@ -1200,14 +1202,14 @@ ${screen.widgets.slice(0, 6).map((sw, swIdx) => {
                   y: 30
                   text: "${initStatus}"
                   text_font: font_roboto_14
-                  text_color: ${initColor}
+                  text_color: ${initStatusColor}
               - label:
                   id: ${iconLabelId}
                   align: BOTTOM_MID
                   y: -12
                   text: "${mdiIcon}"
                   text_font: font_mdi_28
-                  text_color: ${initColor}`;
+                  text_color: ${initIconColor}`;
 }).join('\n')}`;
   }
 
@@ -1833,7 +1835,7 @@ ${screen.widgets.slice(0, 6).map((sw, swIdx) => {
         const iconLabelId = `lbl_ico_custom_${screen.id}_${cwIdx}`;
         const initStatus = isSens ? escapeYamlText(safeSlice(cw.subtitle || 'Kafelek', isThreeCols ? 18 : 26)) : (isDefaultOn ? 'WŁ.' : 'WYŁ.');
         const initSubColor = isSens ? th.accentMuted : (isDefaultOn ? th.accent : '0x64748B');
-        const initIcoColor = isDefaultOn ? th.accent : '0x64748B';
+        const initIcoColor = isDefaultOn ? activeIconColor : '0x64748B';
 
         let clickAct = '';
         if (cw.entityId && !cw.entityId.startsWith('sensor.')) {
