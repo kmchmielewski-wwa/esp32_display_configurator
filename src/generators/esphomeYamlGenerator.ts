@@ -8,52 +8,98 @@ export const MDI_GLYPH_MAP: Record<string, string> = {
   // Nawigacja i system
   Home: '\\U000F02DC',          // mdi-home
   HomeAssistant: '\\U000F07D0', // mdi-home-assistant
-  Dashboard: '\\U000F05CA',     // mdi-view-dashboard
-  ViewGrid: '\\U000F05CD',      // mdi-view-grid
+  Dashboard: '\\U000F056E',     // mdi-view-dashboard
+  ViewGrid: '\\U000F0570',      // mdi-view-grid
   Settings: '\\U000F0493',      // mdi-cog
-  Tune: '\\U000F04DF',          // mdi-tune
-  Sliders: '\\U000F04DF',       // mdi-tune
-  Activity: '\\U000F0429',      // mdi-pulse
+  Tune: '\\U000F062E',          // mdi-tune
+  Sliders: '\\U000F062E',       // mdi-tune
+  Activity: '\\U000F0430',      // mdi-pulse
   Information: '\\U000F02FD',   // mdi-information-outline
   Alert: '\\U000F0028',         // mdi-alert-circle
-  Sparkles: '\\U000F006D',      // mdi-auto-fix
+  Sparkles: '\\U000F0068',      // mdi-auto-fix
 
   // Oświetlenie
   Lightbulb: '\\U000F0335',        // mdi-lightbulb
   LightbulbOutline: '\\U000F0336', // mdi-lightbulb-outline
-  LightbulbGroup: '\\U000F0E27',   // mdi-lightbulb-group
+  LightbulbGroup: '\\U000F1253',   // mdi-lightbulb-group
+  LightbulbOn: '\\U000F06E8',      // mdi-lightbulb-on
+  LightbulbOnOutline: '\\U000F06E9', // mdi-lightbulb-on-outline
+  LightbulbOff: '\\U000F0E4F',     // mdi-lightbulb-off
+  LightbulbOffOutline: '\\U000F0E50', // mdi-lightbulb-off-outline
+  LightbulbAuto: '\\U000F1800',    // mdi-lightbulb-auto
+  LightbulbGroupOff: '\\U000F12CD', // mdi-lightbulb-group-off
+  LightbulbMultiple: '\\U000F1255', // mdi-lightbulb-multiple
+  LightbulbMultipleOutline: '\\U000F1256', // mdi-lightbulb-multiple-outline
+  LightbulbMultipleOff: '\\U000F12CF', // mdi-lightbulb-multiple-off
   CeilingLight: '\\U000F0769',     // mdi-ceiling-light
-  WallSconce: '\\U000F0914',       // mdi-wall-sconce
+  CeilingLightOutline: '\\U000F17C7', // mdi-ceiling-light-outline
+  CeilingLightMultiple: '\\U000F18DD', // mdi-ceiling-light-multiple
+  WallSconce: '\\U000F091C',       // mdi-wall-sconce
+  WallSconceFlat: '\\U000F091D',   // mdi-wall-sconce-flat
   FloorLamp: '\\U000F08DD',        // mdi-floor-lamp
+  FloorLampDual: '\\U000F1040',    // mdi-floor-lamp-dual
+  FloorLampTorchiere: '\\U000F1747', // mdi-floor-lamp-torchiere
+  FloorLampTorchiereVariant: '\\U000F1041', // mdi-floor-lamp-torchiere-variant
   DeskLamp: '\\U000F095F',         // mdi-desk-lamp
-  LedStrip: '\\U000F07D9',         // mdi-led-strip
+  Chandelier: '\\U000F1793',       // mdi-chandelier
+  Lamp: '\\U000F06B5',             // mdi-lamp
+  LampOutline: '\\U000F17D0',      // mdi-lamp-outline
+  Lamps: '\\U000F1576',            // mdi-lamps
+  LedStrip: '\\U000F07D6',         // mdi-led-strip
+  LedStripVariant: '\\U000F1051',  // mdi-led-strip-variant
+  LedStripVariantOff: '\\U000F1A4B', // mdi-led-strip-variant-off
+  LightRecessed: '\\U000F179B',    // mdi-light-recessed
+  CoachLamp: '\\U000F1020',        // mdi-coach-lamp
+  OutdoorLamp: '\\U000F1054',     // mdi-outdoor-lamp
+  StringLights: '\\U000F12BA',    // mdi-string-lights
+  StringLightsOff: '\\U000F12BB', // mdi-string-lights-off
+  LightSwitch: '\\U000F097E',     // mdi-light-switch
+  LightSwitchOff: '\\U000F1A24',  // mdi-light-switch-off
+  ToggleSwitch: '\\U000F0521',    // mdi-toggle-switch
+  ToggleSwitchOff: '\\U000F0522', // mdi-toggle-switch-off
+  Brightness5: '\\U000F00DE',     // mdi-brightness-5
+  Brightness6: '\\U000F00DF',     // mdi-brightness-6
+  Brightness7: '\\U000F00E0',     // mdi-brightness-7
+  ThemeLightDark: '\\U000F050E',  // mdi-theme-light-dark
+  HomeLightbulb: '\\U000F1251',   // mdi-home-lightbulb
+  GlobeLight: '\\U000F066F',      // mdi-globe-light
+  SpotlightBeam: '\\U000F04C9',  // mdi-spotlight-beam
+  LightFloodDown: '\\U000F1987',  // mdi-light-flood-down
 
   // Zasilanie i energia
   Power: '\\U000F0425',          // mdi-power
-  PowerSocket: '\\U000F0426',    // mdi-power-socket-eu
+  PowerSocket: '\\U000F07E7',    // mdi-power-socket-eu
   PowerPlug: '\\U000F06A5',      // mdi-power-plug
   Zap: '\\U000F0241',            // mdi-flash
   Flash: '\\U000F0241',          // mdi-flash
-  SolarPower: '\\U000F0A79',     // mdi-solar-power
-  SolarPanel: '\\U000F0D99',     // mdi-solar-panel
+  SolarPower: '\\U000F0A72',     // mdi-solar-power
+  SolarPanel: '\\U000F0D9B',     // mdi-solar-panel
   BatteryCharging: '\\U000F0084',// mdi-battery-charging
   BatteryHigh: '\\U000F0079',    // mdi-battery
-  MeterElectric: '\\U000F03FE',  // mdi-meter-electric
+  MeterElectric: '\\U000F1A57',  // mdi-meter-electric
 
   // Multimedia & Audio/Wideo
   Tv: '\\U000F0502',             // mdi-television
   Television: '\\U000F0502',     // mdi-television
   TvRemote: '\\U000F0454',       // mdi-remote
-  Speaker: '\\U000F057E',        // mdi-volume-high
-  SpeakerBluetooth: '\\U000F0980',// mdi-speaker-bluetooth
-  SpeakerGroup: '\\U000F0D2E',   // mdi-speaker-multiple
-  Radio: '\\U000F0434',          // mdi-radio
-  Cast: '\\U000F0126',           // mdi-cast
-  CastConnected: '\\U000F0127',  // mdi-cast-connected
-  CastAudio: '\\U000F0128',      // mdi-cast-audio
+  Speaker: '\\U000F04C3',         // mdi-speaker
+  SpeakerBluetooth: '\\U000F09A2',// mdi-speaker-bluetooth
+  SpeakerGroup: '\\U000F0D38',   // mdi-speaker-multiple
+  SpeakerWireless: '\\U000F071F', // mdi-speaker-wireless
+  SpeakerOff: '\\U000F04C4',      // mdi-speaker-off
+  Soundbar: '\\U000F17DB',        // mdi-soundbar
+  Radio: '\\U000F0439',           // mdi-radio
+  RadioTower: '\\U000F043B',      // mdi-radio-tower
+  Cast: '\\U000F0118',            // mdi-cast
+  CastConnected: '\\U000F0119',   // mdi-cast-connected
+  CastAudio: '\\U000F101E',       // mdi-cast-audio
+  CastAudioVariant: '\\U000F1749', // mdi-cast-audio-variant
+  CastOff: '\\U000F078A',         // mdi-cast-off
+  CastVariant: '\\U000F001F',     // mdi-cast-variant
   Play: '\\U000F040A',           // mdi-play
   Pause: '\\U000F03E4',          // mdi-pause
-  PlayPause: '\\U000F040B',      // mdi-play-pause
+  PlayPause: '\\U000F040E',      // mdi-play-pause
+  Check: '\\U000F012C',          // mdi-check
   Square: '\\U000F04DB',         // mdi-stop
   Stop: '\\U000F04DB',           // mdi-stop
   SkipPrevious: '\\U000F04AE',   // mdi-skip-previous
@@ -66,67 +112,90 @@ export const MDI_GLYPH_MAP: Record<string, string> = {
   Shuffle: '\\U000F049D',        // mdi-shuffle
   Volume1: '\\U000F075E',        // mdi-volume-minus
   Volume2: '\\U000F057E',        // mdi-volume-high
+  Volume: '\\U000F057E',         // mdi-volume-high
   VolumeHigh: '\\U000F057E',     // mdi-volume-high
-  VolumeMedium: '\\U000F057F',   // mdi-volume-medium
-  VolumeLow: '\\U000F0580',      // mdi-volume-low
+  VolumeMedium: '\\U000F0580',    // mdi-volume-medium
+  VolumeLow: '\\U000F057F',       // mdi-volume-low
   VolumeX: '\\U000F075F',        // mdi-volume-mute
   VolumeMute: '\\U000F075F',     // mdi-volume-mute
   VolumeMinus: '\\U000F075E',    // mdi-volume-minus
   VolumePlus: '\\U000F075D',     // mdi-volume-plus
   Music: '\\U000F075A',          // mdi-music
-  MusicNote: '\\U000F0383',      // mdi-music-note
-  PlaylistMusic: '\\U000F0CB8',  // mdi-playlist-music
+  MusicNote: '\\U000F0387',       // mdi-music-note
+  MusicBox: '\\U000F0384',        // mdi-music-box
+  MusicBoxMultiple: '\\U000F0333', // mdi-music-box-multiple
+  MusicNoteOff: '\\U000F038A',    // mdi-music-note-off
+  MusicNoteBluetooth: '\\U000F05FE', // mdi-music-note-bluetooth
+  MusicOff: '\\U000F075B',        // mdi-music-off
+  PlaylistMusic: '\\U000F0CB8',   // mdi-playlist-music
+  PlaylistPlay: '\\U000F0411',    // mdi-playlist-play
   Album: '\\U000F0025',          // mdi-album
-  Disc: '\\U000F01BA',           // mdi-disc
-  Podcast: '\\U000F0999',        // mdi-podcast
-  Movie: '\\U000F037E',          // mdi-movie
-  Film: '\\U000F037E',           // mdi-movie
+  Disc: '\\U000F05EE',           // mdi-disc
+  Podcast: '\\U000F0994',         // mdi-podcast
+  Movie: '\\U000F0381',           // mdi-movie
+  Film: '\\U000F0381',            // mdi-movie
   Video: '\\U000F0567',          // mdi-video
-  Hdmi: '\\U000F02D6',           // mdi-video-input-hdmi
+  Hdmi: '\\U000F0841',           // mdi-video-input-hdmi
   Youtube: '\\U000F05C3',        // mdi-youtube
-  Spotify: '\\U000F04CB',        // mdi-spotify
+  Spotify: '\\U000F04C7',        // mdi-spotify
   Netflix: '\\U000F0746',        // mdi-netflix
+  TelevisionClassic: '\\U000F07F4', // mdi-television-classic
+  TelevisionBox: '\\U000F0839',   // mdi-television-box
+  TelevisionClassicOff: '\\U000F083A', // mdi-television-classic-off
+  TelevisionOff: '\\U000F083B',   // mdi-television-off
+  TelevisionSpeaker: '\\U000F1B1B', // mdi-television-speaker
+  TelevisionGuide: '\\U000F0503', // mdi-television-guide
+  RemoteTv: '\\U000F0EC5',        // mdi-remote-tv
+  RemoteTvOff: '\\U000F0EC6',     // mdi-remote-tv-off
+  ProjectorScreen: '\\U000F042F', // mdi-projector-screen
+  ProjectorScreenOff: '\\U000F180D', // mdi-projector-screen-off
+  HeadphonesBluetooth: '\\U000F0970', // mdi-headphones-bluetooth
+  DiscPlayer: '\\U000F0960',      // mdi-disc-player
+  AudioVideo: '\\U000F093D',      // mdi-audio-video
+  AudioVideoOff: '\\U000F11B6',   // mdi-audio-video-off
+  VideoInputHdmi: '\\U000F0841',  // mdi-video-input-hdmi
+  VideoInputAntenna: '\\U000F083F', // mdi-video-input-antenna
   Headphones: '\\U000F02CB',     // mdi-headphones
   Microphone: '\\U000F036C',     // mdi-microphone
   SurroundSound: '\\U000F05C5',  // mdi-surround-sound
-  Projector: '\\U000F042C',      // mdi-projector
-  Equalizer: '\\U000F0EA0',      // mdi-equalizer
-  Gamepad: '\\U000F0280',        // mdi-gamepad-variant
-  Xbox: '\\U000F05B8',           // mdi-microsoft-xbox
-  Playstation: '\\U000F0419',    // mdi-sony-playstation
+  Projector: '\\U000F042E',        // mdi-projector
+  Equalizer: '\\U000F0EA2',      // mdi-equalizer
+  Gamepad: '\\U000F0297',        // mdi-gamepad-variant
+  Xbox: '\\U000F05B9',           // mdi-microsoft-xbox
+  Playstation: '\\U000F0414',    // mdi-sony-playstation
   GoogleHome: '\\U000F0825',     // mdi-google-home
 
   // Klimat, ogrzewanie i środowisko
   Thermometer: '\\U000F050F',      // mdi-thermometer
-  ThermometerWater: '\\U000F0510', // mdi-thermometer-water
-  Thermostat: '\\U000F0511',       // mdi-thermostat
-  AirConditioner: '\\U000F001D',   // mdi-air-conditioner
-  AirPurifier: '\\U000F0D13',      // mdi-air-purifier
+  ThermometerWater: '\\U000F1A80', // mdi-thermometer-water
+  Thermostat: '\\U000F0393',       // mdi-thermostat
+  AirConditioner: '\\U000F001B',   // mdi-air-conditioner
+  AirPurifier: '\\U000F0D44',      // mdi-air-purifier
   Fan: '\\U000F0210',              // mdi-fan
-  FanSpeed1: '\\U000F11C8',        // mdi-fan-speed-1
-  FanSpeed2: '\\U000F11C9',        // mdi-fan-speed-2
-  FanSpeed3: '\\U000F11CA',        // mdi-fan-speed-3
-  Radiator: '\\U000F08B9',         // mdi-radiator
+  FanSpeed1: '\\U000F1472',        // mdi-fan-speed-1
+  FanSpeed2: '\\U000F1473',        // mdi-fan-speed-2
+  FanSpeed3: '\\U000F1474',        // mdi-fan-speed-3
+  Radiator: '\\U000F0438',         // mdi-radiator
   Flame: '\\U000F0238',            // mdi-fire
   Fire: '\\U000F0238',             // mdi-fire
   WaterPercent: '\\U000F058E',     // mdi-water-percent
   Droplet: '\\U000F058E',          // mdi-water-percent
   Gauge: '\\U000F029A',            // mdi-gauge
-  Sprinkler: '\\U000F0A7B',        // mdi-sprinkler
-  Valve: '\\U000F0606',            // mdi-valve
-  WaterBoiler: '\\U000F0F37',      // mdi-water-boiler
+  Sprinkler: '\\U000F105F',        // mdi-sprinkler
+  Valve: '\\U000F1066',            // mdi-valve
+  WaterBoiler: '\\U000F0F92',      // mdi-water-boiler
 
   // Pogoda i czas
   Sun: '\\U000F0599',              // mdi-weather-sunny
   Sunset: '\\U000F059A',           // mdi-weather-sunset
-  Sunrise: '\\U000F0598',          // mdi-weather-sunset-up
+  Sunrise: '\\U000F059C',          // mdi-weather-sunset-up
   Moon: '\\U000F0594',             // mdi-weather-night
   CloudSun: '\\U000F0595',         // mdi-weather-partly-cloudy
   Rain: '\\U000F0597',             // mdi-weather-rainy
   Calendar: '\\U000F00ED',         // mdi-calendar
-  CalendarCheck: '\\U000F00EE',    // mdi-calendar-check
+  CalendarCheck: '\\U000F00EF',    // mdi-calendar-check
   Clock: '\\U000F0150',            // mdi-clock-outline
-  CheckSquare: '\\U000F0135',      // mdi-checkbox-marked
+  CheckSquare: '\\U000F0132',      // mdi-checkbox-marked
   CheckCircle2: '\\U000F0134',     // mdi-checkbox-marked-circle-outline
 
   // Bezpieczeństwo i czujniki
@@ -135,50 +204,52 @@ export const MDI_GLYPH_MAP: Record<string, string> = {
   Shield: '\\U000F0498',           // mdi-shield
   ShieldCheck: '\\U000F0565',      // mdi-shield-check
   Cctv: '\\U000F07AE',             // mdi-cctv
+  Camera: '\\U000F0100',           // mdi-camera
   Bell: '\\U000F009A',             // mdi-bell
-  BellRing: '\\U000F009B',         // mdi-bell-ring
-  AlarmLight: '\\U000F078E',       // mdi-alarm-light
-  MotionSensor: '\\U000F0D2B',     // mdi-motion-sensor
-  DoorOpen: '\\U000F081B',         // mdi-door-open
-  DoorClosed: '\\U000F081A',       // mdi-door-closed
-  WindowOpen: '\\U000F0588',       // mdi-window-open
-  WindowClosed: '\\U000F0585',     // mdi-window-closed
-  WindowShutter: '\\U000F07E3',    // mdi-window-shutter
+  BellRing: '\\U000F009E',         // mdi-bell-ring
+  AlarmLight: '\\U000F078F',       // mdi-alarm-light
+  MotionSensor: '\\U000F0D91',     // mdi-motion-sensor
+  DoorOpen: '\\U000F081C',         // mdi-door-open
+  DoorClosed: '\\U000F081B',       // mdi-door-closed
+  WindowOpen: '\\U000F05B1',       // mdi-window-open
+  WindowClosed: '\\U000F05AE',     // mdi-window-closed
+  WindowShutter: '\\U000F111C',    // mdi-window-shutter
   Garage: '\\U000F06D9',           // mdi-garage
   Car: '\\U000F010B',              // mdi-car
-  CarElectric: '\\U000F0B63',      // mdi-car-electric
+  CarElectric: '\\U000F0B6C',      // mdi-car-electric
 
   // Urządzenia AGD i Druk 3D
   Printer: '\\U000F042A',          // mdi-printer
   Printer3d: '\\U000F042B',        // mdi-printer-3d
   'printer-3d': '\\U000F042B',     // mdi-printer-3d
-  RobotVacuum: '\\U000F070C',      // mdi-robot-vacuum
-  WashingMachine: '\\U000F0592',   // mdi-washing-machine
+  RobotVacuum: '\\U000F070D',      // mdi-robot-vacuum
+  WashingMachine: '\\U000F072A',   // mdi-washing-machine
   Dishwasher: '\\U000F0AAC',       // mdi-dishwasher
-  Fridge: '\\U000F028F',           // mdi-fridge
-  Microwave: '\\U000F0C7A',        // mdi-microwave
+  Fridge: '\\U000F0290',           // mdi-fridge
+  Microwave: '\\U000F0C99',        // mdi-microwave
   Kettle: '\\U000F05FA',           // mdi-kettle
-  CoffeeMaker: '\\U000F017E',      // mdi-coffee-maker
-  Box: '\\U000F01C9',              // mdi-cube-outline
+  CoffeeMaker: '\\U000F109F',      // mdi-coffee-maker
+  Box: '\\U000F01A7',              // mdi-cube-outline
   Layers: '\\U000F0328',           // mdi-layers
 
   // Sieć, ESP32 i Hardware
   Wifi: '\\U000F05A9',             // mdi-wifi
   WifiOff: '\\U000F05AA',          // mdi-wifi-off
-  RouterWireless: '\\U000F0463',   // mdi-router-wireless
+  RouterWireless: '\\U000F0469',   // mdi-router-wireless
   Ethernet: '\\U000F0200',         // mdi-ethernet
   Bluetooth: '\\U000F00AF',        // mdi-bluetooth
   Chip: '\\U000F061A',             // mdi-chip
   Cpu: '\\U000F061A',              // mdi-chip
-  Memory: '\\U000F061B',           // mdi-memory
+  Memory: '\\U000F035B',           // mdi-memory
   Server: '\\U000F048B',           // mdi-server
   HardDrive: '\\U000F02CA',        // mdi-harddisk
 };
 
 export function getMdiGlyph(iconName?: string): string {
   if (!iconName) return '\\U000F006D';
-  if (MDI_GLYPH_MAP[iconName]) return MDI_GLYPH_MAP[iconName];
-  const normalized = iconName.toLowerCase().replace(/[-_]/g, '');
+  const cleanName = iconName.trim().replace(/^mdi[:-]?/i, '');
+  if (MDI_GLYPH_MAP[cleanName]) return MDI_GLYPH_MAP[cleanName];
+  const normalized = cleanName.toLowerCase().replace(/[-_]/g, '');
   for (const [k, v] of Object.entries(MDI_GLYPH_MAP)) {
     if (k.toLowerCase().replace(/[-_]/g, '') === normalized) return v;
   }

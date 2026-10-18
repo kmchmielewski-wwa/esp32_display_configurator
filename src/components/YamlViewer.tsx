@@ -7,6 +7,7 @@ import {
   getFontGlyphsPreflightReport,
   validateAndDeduplicateGlyphs,
 } from '../generators/esphomeYamlGenerator';
+import { copyTextToClipboard } from '../utils/clipboard';
 import {
   Copy,
   Download,
@@ -40,6 +41,7 @@ export const YamlViewer: React.FC<YamlViewerProps> = ({ config, onUpdateConfig, 
   const [activeSubTab, setActiveSubTab] = useState<'main' | 'secrets' | 'guide'>('main');
   const [copiedMain, setCopiedMain] = useState(false);
   const [copiedSecrets, setCopiedSecrets] = useState(false);
+  const [copyError, setCopyError] = useState<string | null>(null);
   const [showGlyphInspector, setShowGlyphInspector] = useState(false);
   const [testGlyphInput, setTestGlyphInput] = useState('');
 
@@ -61,16 +63,36 @@ export const YamlViewer: React.FC<YamlViewerProps> = ({ config, onUpdateConfig, 
     haApiKey: 'WygenerujUnikalnyKluczBase64LubPozostawPuste',
   };
 
-  const handleCopyMain = () => {
-    navigator.clipboard.writeText(mainYaml);
-    setCopiedMain(true);
-    setTimeout(() => setCopiedMain(false), 2500);
+  const handleCopyMain = async () => {
+    setCopyError(null);
+    try {
+      await copyTextToClipboard(mainYaml);
+      setCopiedMain(true);
+      setTimeout(() => setCopiedMain(false), 2500);
+    } catch (error) {
+      setCopiedMain(false);
+      setCopyError(
+        `Nie udało się skopiować głównego YAML: ${
+          error instanceof Error ? error.message : 'wystąpił nieznany błąd.'
+        }`,
+      );
+    }
   };
 
-  const handleCopySecrets = () => {
-    navigator.clipboard.writeText(secretsYaml);
-    setCopiedSecrets(true);
-    setTimeout(() => setCopiedSecrets(false), 2500);
+  const handleCopySecrets = async () => {
+    setCopyError(null);
+    try {
+      await copyTextToClipboard(secretsYaml);
+      setCopiedSecrets(true);
+      setTimeout(() => setCopiedSecrets(false), 2500);
+    } catch (error) {
+      setCopiedSecrets(false);
+      setCopyError(
+        `Nie udało się skopiować secrets.yaml: ${
+          error instanceof Error ? error.message : 'wystąpił nieznany błąd.'
+        }`,
+      );
+    }
   };
 
   const handleDownloadMain = () => {
@@ -207,6 +229,12 @@ export const YamlViewer: React.FC<YamlViewerProps> = ({ config, onUpdateConfig, 
           )}
         </div>
       </div>
+
+      {copyError && (
+        <p role="alert" className="rounded-xl border border-red-800/60 bg-red-950/40 px-4 py-2 text-xs text-red-300">
+          {copyError} Możesz pobrać plik przyciskiem pobierania.
+        </p>
+      )}
 
       {/* TAB 1: MAIN YAML */}
       {activeSubTab === 'main' && (
