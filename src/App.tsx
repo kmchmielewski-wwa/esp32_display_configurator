@@ -193,6 +193,10 @@ export default function App() {
       media_artist: 'Queen',
       'sensor.media_title': 'Bohemian Rhapsody',
       'sensor.media_artist': 'Queen',
+      media_position: 138,
+      media_duration: 354,
+      media_volume: 50,
+      media_muted: false,
     };
     RAW_CSV_ENTITIES.forEach(e => {
       states[e.entity_id] = e.state;
@@ -265,6 +269,10 @@ export default function App() {
       media_artist: 'Queen',
       'sensor.media_title': 'Bohemian Rhapsody',
       'sensor.media_artist': 'Queen',
+      media_position: 138,
+      media_duration: 354,
+      media_volume: 50,
+      media_muted: false,
     };
     RAW_CSV_ENTITIES.forEach(e => {
       fresh[e.entity_id] = e.state;
@@ -390,6 +398,7 @@ export default function App() {
                   onScreenChange={setActiveScreenIndex}
                   entityStates={entityStates}
                   onEntityStateToggle={handleEntityStateToggle}
+                  onUpdateSimulatedState={handleUpdateSimulatedState}
                   onThemeChange={(theme) => setConfig(prev => ({ ...prev, theme }))}
                 />
               </div>

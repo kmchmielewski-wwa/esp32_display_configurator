@@ -134,7 +134,7 @@ export const DEFAULT_SCREENS: DisplayScreen[] = [
     ],
   },
 
-  // 3. Multimedia (Tylko etykieta Multimedia na górze, bez zbędnych napisów)
+  // 3. Multimedia
   {
     id: 'screen_media',
     title: 'Multimedia',

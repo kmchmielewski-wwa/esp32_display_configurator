@@ -708,6 +708,32 @@ ${hasCalendarScreen ? `              - lvgl.label.update:
                     char buf[16];
                     snprintf(buf, sizeof(buf), "%.1f°C", x);
                     return std::string(buf);` : ''}
+${hasMediaScreen ? `  - platform: homeassistant
+    id: ha_media_position
+    entity_id: ${mediaEntityId}
+    attribute: media_position
+
+  - platform: homeassistant
+    id: ha_media_duration
+    entity_id: ${mediaEntityId}
+    attribute: media_duration
+
+  - platform: homeassistant
+    id: ha_media_volume
+    entity_id: ${mediaEntityId}
+    attribute: volume_level
+    on_value:
+      then:
+        - if:
+            condition:
+              lambda: 'return !std::isnan(x);'
+            then:
+              - lvgl.label.update:
+                  id: lbl_media_volume
+                  text: !lambda |-
+                    char buf[24];
+                    snprintf(buf, sizeof(buf), "Głośność: %.0f%%", x * 100.0f);
+                    return std::string(buf);` : ''}
 ${uniqueSensors.map(id => `  - platform: homeassistant
     id: ${id.replace(/[^a-zA-Z0-9_]/g, '_')}
     entity_id: ${id}`).join('\n\n')}
@@ -816,6 +842,24 @@ ${hasMediaScreen ? `  # Tytuł utworu z Home Assistant (${mediaEntityId})
             id: lbl_media_artist
             text: !lambda |-
               return (!x.empty() && x != "unavailable" && x != "unknown") ? x : std::string("Nieznany wykonawca");` : ''}
+${hasMediaScreen ? `
+  # Stan odtwarzacza steruje ikoną play/pause.
+  - platform: homeassistant
+    id: ha_media_state
+    entity_id: ${mediaEntityId}
+    on_value:
+      then:
+        - if:
+            condition:
+              lambda: 'return x == "playing";'
+            then:
+              - lvgl.label.update:
+                  id: lbl_media_play_pause_icon
+                  text: "\\U000F03E4"
+            else:
+              - lvgl.label.update:
+                  id: lbl_media_play_pause_icon
+                  text: "\\U000F040A"` : ''}
 ${uniqueTexts.map(id => `  - platform: homeassistant
     id: ${id.replace(/[^a-zA-Z0-9_]/g, '_')}
     entity_id: ${id}`).join('\n\n')}
@@ -935,6 +979,14 @@ interval:
             lambda: 'return id(ha_time).now().is_valid();'
           then:
             - script.execute: update_clock_and_date
+${hasMediaScreen ? `      - lvgl.bar.update:
+          id: bar_media_progress
+          value: !lambda |-
+            const float position = id(ha_media_position).state;
+            const float duration = id(ha_media_duration).state;
+            if (std::isnan(position) || std::isnan(duration) || duration <= 0.0f) return 0;
+            const float progress = 100.0f * position / duration;
+            return static_cast<int>(progress > 100.0f ? 100.0f : progress);` : ''}
 
 script:
   - id: update_clock_and_date
@@ -988,10 +1040,22 @@ font:
     glyphs:
       - ${robotoGlyphsYaml}
 
+  - file: "gfonts://Roboto"
+    id: font_roboto_12
+    size: 12
+    glyphs:
+      - ${robotoGlyphsYaml}
+
   # Czcionka nagłówkowa 18px dla tytułów i parametrów
   - file: "gfonts://Roboto"
     id: font_roboto_18
     size: 18
+    glyphs:
+      - ${robotoGlyphsYaml}
+
+  - file: "gfonts://Roboto"
+    id: font_roboto_24
+    size: 24
     glyphs:
       - ${robotoGlyphsYaml}
 
@@ -1180,11 +1244,13 @@ ${quickWidgets.map((qw, qIdx) => {
                     entity_id: ${qw.entityId}`;
   }
   const mdiIcon = getMdiGlyph(qw.icon);
-  const safeTitle = escapeYamlText(safeSlice(qw.title, 14));
+  const safeTitle = escapeYamlText(qw.title);
   const isDefaultOn = qw.entityId ? (knownStates[qw.entityId] === 'on' || knownStates[qw.entityId] === 'playing') : false;
   const statusLabelId = `lbl_sub_home_${qIdx}`;
   const iconLabelId = `lbl_ico_home_${qIdx}`;
   const safeSub = isSens ? 'Postęp' : qw.entityId?.startsWith('media_player.') ? (isDefaultOn ? 'Odtwarza' : 'Pauza') : (isDefaultOn ? 'WŁ.' : 'WYŁ.');
+  const safeDescription = escapeYamlText(qw.subtitle);
+  const statusY = qw.subtitle?.trim() ? 75 : 42;
   const initSubColor = isSens ? th.accentMuted : (isDefaultOn ? th.accent : '0x64748B');
   const initIcoColor = isDefaultOn ? activeIconColor : '0x64748B';
 
@@ -1201,20 +1267,36 @@ ${quickWidgets.map((qw, qIdx) => {
             border_width: 1
             radius: 12${clickAct}
             widgets:
-              # Tekst na górze
+              # Dwulinijkowy tytuł i opis
               - label:
+                  width: 100
+                  height: 36
                   align: TOP_MID
-                  y: 10
+                  y: 4
                   text: "${safeTitle}"
                   text_font: font_roboto_14
                   text_color: ${th.textPrimary}
+                  text_align: CENTER
+                  long_mode: WRAP
+              - label:
+                  width: 100
+                  height: 30
+                  align: TOP_MID
+                  y: 42
+                  text: "${safeDescription}"
+                  text_font: font_roboto_12
+                  text_color: ${th.accentMuted}
+                  text_align: CENTER
+                  long_mode: WRAP
               - label:
                   id: ${statusLabelId}
+                  width: 100
                   align: TOP_MID
-                  y: 32
+                  y: ${statusY}
                   text: "${safeSub}"
-                  text_font: font_roboto_14
+                  text_font: font_roboto_12
                   text_color: ${initSubColor}
+                  text_align: CENTER
               # Ikona MDI na dole (dynamiczny kolor w zależności od stanu WŁ./WYŁ.)
               - label:
                   id: ${iconLabelId}
@@ -1235,10 +1317,12 @@ ${screen.widgets.slice(0, 6).map((sw, swIdx) => {
   const x = 10 + c * 155;
   const y = 6 + r * 124;
   const mdiIcon = getMdiGlyph(sw.icon || 'Lightbulb');
-  const safeTitle = escapeYamlText(safeSlice(sw.title, 16));
+  const safeTitle = escapeYamlText(sw.title);
+  const safeDescription = escapeYamlText(sw.subtitle);
   const isDefaultOn = sw.entityId ? (knownStates[sw.entityId] === 'on' || knownStates[sw.entityId] === 'playing') : false;
   const statusLabelId = `lbl_sub_lights_${swIdx}`;
   const iconLabelId = `lbl_ico_lights_${swIdx}`;
+  const statusY = sw.subtitle?.trim() ? 66 : 38;
   const initStatus = isDefaultOn ? 'WŁ.' : 'WYŁ.';
   const initStatusColor = isDefaultOn ? th.accent : '0x64748B';
   const initIconColor = isDefaultOn ? activeIconColor : '0x64748B';
@@ -1262,33 +1346,50 @@ ${screen.widgets.slice(0, 6).map((sw, swIdx) => {
                     entity_id: ${sw.entityId || 'switch.swiatlo'}
             widgets:
               - label:
+                  width: 138
+                  height: 34
                   align: TOP_MID
-                  y: 8
+                  y: 3
                   text: "${safeTitle}"
                   text_font: font_roboto_14
                   text_color: ${th.textPrimary}
+                  text_align: CENTER
+                  long_mode: WRAP
+              - label:
+                  width: 138
+                  height: 26
+                  align: TOP_MID
+                  y: 38
+                  text: "${safeDescription}"
+                  text_font: font_roboto_12
+                  text_color: ${th.accentMuted}
+                  text_align: CENTER
+                  long_mode: WRAP
               - label:
                   id: ${statusLabelId}
+                  width: 138
                   align: TOP_MID
-                  y: 30
+                  y: ${statusY}
                   text: "${initStatus}"
-                  text_font: font_roboto_14
+                  text_font: font_roboto_12
                   text_color: ${initStatusColor}
+                  text_align: CENTER
               - label:
                   id: ${iconLabelId}
                   align: BOTTOM_MID
-                  y: -12
+                  y: -8
                   text: "${mdiIcon}"
                   text_font: font_mdi_28
                   text_color: ${initIconColor}`;
 }).join('\n')}`;
   }
 
-  // 3. STRONA MULTIMEDIÓW: Dedykowana karta multimediów - Etykieta Multimedia, Wykonawca i Tytuł odtwarzanego utworu
+  // 3. STRONA MULTIMEDIÓW: Dedykowana karta z tytułem, wykonawcą i sterowaniem odtwarzaczem
   else if (screen.id === 'screen_media') {
     const med = screen.widgets[0] || { entityId: 'media_player.mi_box_2', title: 'Multimedia' };
     const pEntity = med.entityId || 'media_player.mi_box_2';
-    pageContent = `        # Dedykowany Odtwarzacz Multimediów (Etykieta Multimedia, Wykonawca, Tytuł utworu)
+    const initialPlayPauseIcon = knownStates[pEntity] === 'playing' ? '\\U000F03E4' : '\\U000F040A';
+    pageContent = `        # Dedykowany odtwarzacz multimediów
         - obj:
             x: 10
             y: 6
@@ -1303,42 +1404,49 @@ ${screen.widgets.slice(0, 6).map((sw, swIdx) => {
             radius: 12
             pad_all: 0
             widgets:
-              # Etykieta Multimedia na górze
-              - label:
-                  align: TOP_MID
-                  y: 8
-                  text: "Multimedia"
-                  text_font: font_roboto_14
-                  text_color: ${th.accentMuted}
-
               # Tytuł odtwarzanego utworu
               - label:
                   id: lbl_media_title
                   align: TOP_MID
-                  y: 26
+                  y: 8
                   width: 440
                   text: "Bohemian Rhapsody"
-                  text_font: font_roboto_18
+                  text_font: font_roboto_24
                   text_color: ${th.textPrimary}
+                  text_align: CENTER
                   long_mode: SCROLL_CIRCULAR
 
               # Wykonawca utworu
               - label:
                   id: lbl_media_artist
                   align: TOP_MID
-                  y: 50
+                  y: 38
                   width: 440
                   text: "Queen"
-                  text_font: font_roboto_14
+                  text_font: font_roboto_18
                   text_color: ${th.accent}
-                  long_mode: DOT
+                  text_align: CENTER
+                  long_mode: SCROLL_CIRCULAR
+
+              - bar:
+                  id: bar_media_progress
+                  x: 30
+                  y: 68
+                  width: 400
+                  height: 8
+                  min_value: 0
+                  max_value: 100
+                  value: 0
+                  bg_color: ${th.cardBorder}
+                  indicator:
+                    bg_color: ${th.accent}
 
               # Przyciski Nawigacji Muzycznej - ikony MDI
               - button:
                   x: 60
-                  y: 78
+                  y: 88
                   width: 100
-                  height: 66
+                  height: 60
                   pad_all: 0
                   scrollable: false
                   bg_color: ${th.cardActiveBg}
@@ -1358,9 +1466,9 @@ ${screen.widgets.slice(0, 6).map((sw, swIdx) => {
                         text_color: 0xFFFFFF
               - button:
                   x: 180
-                  y: 78
+                  y: 88
                   width: 100
-                  height: 66
+                  height: 60
                   pad_all: 0
                   scrollable: false
                   bg_color: ${th.cardActiveBg}
@@ -1374,15 +1482,16 @@ ${screen.widgets.slice(0, 6).map((sw, swIdx) => {
                           entity_id: ${pEntity}
                   widgets:
                     - label:
+                        id: lbl_media_play_pause_icon
                         align: CENTER
-                        text: "\\U000F040A"
+                        text: "${initialPlayPauseIcon}"
                         text_font: font_mdi_28
                         text_color: 0xFFFFFF
               - button:
                   x: 300
-                  y: 78
+                  y: 88
                   width: 100
-                  height: 66
+                  height: 60
                   pad_all: 0
                   scrollable: false
                   bg_color: ${th.cardActiveBg}
@@ -1403,10 +1512,10 @@ ${screen.widgets.slice(0, 6).map((sw, swIdx) => {
 
               # Regulacja Głośności - ikony MDI
               - button:
-                  x: 60
-                  y: 154
-                  width: 100
-                  height: 66
+                  x: 66
+                  y: 160
+                  width: 88
+                  height: 54
                   pad_all: 0
                   scrollable: false
                   bg_color: ${th.cardActiveBg}
@@ -1425,10 +1534,10 @@ ${screen.widgets.slice(0, 6).map((sw, swIdx) => {
                         text_font: font_mdi_28
                         text_color: ${th.accent}
               - button:
-                  x: 180
-                  y: 154
-                  width: 100
-                  height: 66
+                  x: 186
+                  y: 160
+                  width: 88
+                  height: 54
                   pad_all: 0
                   scrollable: false
                   bg_color: ${th.cardActiveBg}
@@ -1447,10 +1556,10 @@ ${screen.widgets.slice(0, 6).map((sw, swIdx) => {
                         text_font: font_mdi_28
                         text_color: ${th.accent}
               - button:
-                  x: 300
-                  y: 154
-                  width: 100
-                  height: 66
+                  x: 306
+                  y: 160
+                  width: 88
+                  height: 54
                   pad_all: 0
                   scrollable: false
                   bg_color: ${th.cardActiveBg}
@@ -1467,7 +1576,14 @@ ${screen.widgets.slice(0, 6).map((sw, swIdx) => {
                         align: CENTER
                         text: "\\U000F075D"
                         text_font: font_mdi_28
-                        text_color: ${th.accent}`;
+                        text_color: ${th.accent}
+              - label:
+                  id: lbl_media_volume
+                  align: TOP_MID
+                  y: 218
+                  text: "Głośność: --%"
+                  text_font: font_roboto_14
+                  text_color: ${th.accentMuted}`;
   }
 
   // 4. STRONA DRUKARKI BAMBU LAB: Tylko podgląd parametrów (ikony MDI, brak sterowania)

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ConfigProfile, DisplayScreen, DisplayTheme } from '../types';
 import { getHardwarePreset } from '../data/hardwarePresets';
 import { getThemeCssColors } from '../data/displayThemes';
@@ -11,6 +11,7 @@ interface DisplaySimulatorProps {
   onScreenChange: (index: number) => void;
   entityStates: Record<string, any>;
   onEntityStateToggle: (entityId: string, secondaryId?: string) => void;
+  onUpdateSimulatedState: (key: string, value: any) => void;
   onThemeChange?: (theme: DisplayTheme) => void;
 }
 
@@ -31,12 +32,65 @@ const POLISH_MONTHS = [
 ];
 const ACTIVE_ICON_COLOR = '#FBBF24';
 
+const MediaMarquee: React.FC<{
+  text: string;
+  top: string;
+  fontSize: string;
+  fontWeight: number;
+  color: string;
+}> = ({ text, top, fontSize, fontWeight, color }) => {
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const textRef = useRef<HTMLDivElement>(null);
+  const [isOverflowing, setIsOverflowing] = useState(false);
+
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    const content = textRef.current;
+    if (!viewport || !content) return;
+
+    const updateOverflow = () => setIsOverflowing(content.scrollWidth > viewport.clientWidth + 1);
+    updateOverflow();
+    const resizeObserver = new ResizeObserver(updateOverflow);
+    resizeObserver.observe(viewport);
+    resizeObserver.observe(content);
+    return () => resizeObserver.disconnect();
+  }, [text]);
+
+  return (
+    <div
+      ref={viewportRef}
+      className="absolute flex items-center overflow-hidden"
+      style={{
+        left: '12px',
+        right: '12px',
+        top,
+        height: fontSize === '24px' ? '31px' : '24px',
+        fontSize,
+        fontWeight,
+        color,
+        fontFamily: 'Roboto, sans-serif',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      <div
+        ref={textRef}
+        className={`flex w-max shrink-0 ${isOverflowing ? 'media-marquee-track' : ''}`}
+        style={{ margin: isOverflowing ? undefined : '0 auto', gap: isOverflowing ? '32px' : undefined }}
+      >
+        <span>{text}</span>
+        {isOverflowing && <span aria-hidden="true">{text}</span>}
+      </div>
+    </div>
+  );
+};
+
 export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
   config,
   activeScreenIndex,
   onScreenChange,
   entityStates,
   onEntityStateToggle,
+  onUpdateSimulatedState,
   onThemeChange,
 }) => {
   const [touchPoint, setTouchPoint] = useState<{ x: number; y: number } | null>(null);
@@ -499,7 +553,7 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                         statusColor = isActive ? th.accent : '#64748B';
                         iconColor = isActive ? ACTIVE_ICON_COLOR : '#64748B';
                       } else {
-                        statusText = widget.subtitle || 'Przełącznik';
+                        statusText = '';
                         statusColor = th.accentMuted;
                         iconColor = th.accent;
                       }
@@ -525,26 +579,50 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                             overflow: 'hidden',
                           }}
                         >
-                          {/* Tekst na górze (align: TOP_MID, y: 10, font: 14px Roboto, text_color: textPrimary) */}
+                          {/* Tytuł */}
                           <div
-                            className="absolute inset-x-1.5 text-center truncate"
+                            className="absolute inset-x-1.5 text-center overflow-hidden"
                             style={{
-                              top: '10px',
+                              top: '4px',
+                              height: '36px',
                               fontSize: '14px',
+                              lineHeight: '17px',
                               fontWeight: 500,
                               color: th.textPrimary,
                               fontFamily: 'Roboto, sans-serif',
+                              display: '-webkit-box',
+                              WebkitBoxOrient: 'vertical',
+                              WebkitLineClamp: 2,
+                              wordBreak: 'normal',
+                              overflowWrap: 'normal',
                             }}
                           >
                             {widget.title}
                           </div>
 
-                          {/* Podtytuł na górze (align: TOP_MID, y: 32, font: 14px Roboto, text_color: statusColor) */}
+                          {/* Opis, do dwóch wierszy */}
                           <div
-                            className="absolute inset-x-1.5 text-center truncate"
+                            className="absolute inset-x-1.5 text-center overflow-hidden"
                             style={{
-                              top: '32px',
-                              fontSize: '14px',
+                              top: '42px',
+                              height: '30px',
+                              fontSize: '12px',
+                              lineHeight: '15px',
+                              color: th.accentMuted,
+                              fontFamily: 'Roboto, sans-serif',
+                              display: '-webkit-box',
+                              WebkitBoxOrient: 'vertical',
+                              WebkitLineClamp: 2,
+                            }}
+                          >
+                            {widget.subtitle}
+                          </div>
+
+                          <div
+                            className="absolute inset-x-1.5 text-center"
+                            style={{
+                              top: widget.subtitle?.trim() ? '75px' : '42px',
+                              fontSize: '12px',
                               fontWeight: isActive ? 600 : 400,
                               color: statusColor,
                               fontFamily: 'Roboto, sans-serif',
@@ -602,26 +680,51 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                           overflow: 'hidden',
                         }}
                       >
-                        {/* Tytuł: align: TOP_MID, y: 8, font: 14px Roboto */}
+                        {/* Tytuł */}
                         <div
-                          className="absolute inset-x-2 text-center truncate"
+                          className="absolute inset-x-2 text-center overflow-hidden"
                           style={{
-                            top: '8px',
+                            top: '3px',
+                            height: '34px',
                             fontSize: '14px',
+                            lineHeight: '17px',
                             fontWeight: 500,
                             color: th.textPrimary,
                             fontFamily: 'Roboto, sans-serif',
+                            display: '-webkit-box',
+                            WebkitBoxOrient: 'vertical',
+                            WebkitLineClamp: 2,
+                            wordBreak: 'normal',
+                            overflowWrap: 'normal',
                           }}
                         >
                           {widget.title}
                         </div>
 
-                        {/* Podtytuł / Status WŁ. / WYŁ.: align: TOP_MID, y: 30, font: 14px Roboto */}
+                        {/* Opis, do dwóch wierszy */}
                         <div
-                          className="absolute inset-x-2 text-center truncate"
+                          className="absolute inset-x-2 text-center overflow-hidden"
                           style={{
-                            top: '30px',
-                            fontSize: '14px',
+                            top: '38px',
+                            height: '26px',
+                            fontSize: '12px',
+                            lineHeight: '13px',
+                            color: th.accentMuted,
+                            fontFamily: 'Roboto, sans-serif',
+                            display: '-webkit-box',
+                            WebkitBoxOrient: 'vertical',
+                            WebkitLineClamp: 2,
+                          }}
+                        >
+                          {widget.subtitle}
+                        </div>
+
+                        {/* Stan przełącznika */}
+                        <div
+                          className="absolute inset-x-2 text-center"
+                          style={{
+                            top: widget.subtitle?.trim() ? '66px' : '38px',
+                            fontSize: '12px',
                             fontWeight: isActive ? 600 : 400,
                             color: statusColor,
                             fontFamily: 'Roboto, sans-serif',
@@ -634,7 +737,7 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                         <div
                           className="absolute inset-x-0 flex justify-center items-center transition-colors duration-150"
                           style={{
-                            bottom: '12px',
+                            bottom: '8px',
                             fontSize: '28px',
                             lineHeight: 1,
                             color: iconColor,
@@ -653,6 +756,13 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                   const med = activeScreen.widgets[0];
                   const pEntity = med?.entityId || 'media_player.mi_box_2';
                   const isPlaying = entityStates[pEntity] === 'playing';
+                  const mediaPosition = Number(entityStates.media_position);
+                  const mediaDuration = Number(entityStates.media_duration);
+                  const progress = Number.isFinite(mediaPosition) && Number.isFinite(mediaDuration) && mediaDuration > 0
+                    ? Math.min(100, Math.max(0, (mediaPosition / mediaDuration) * 100))
+                    : 0;
+                  const mediaVolume = Number(entityStates.media_volume ?? 50);
+                  const isMuted = entityStates.media_muted === true;
                   const trackTitle =
                     entityStates['sensor.media_title'] ||
                     entityStates['media_title'] ||
@@ -675,49 +785,26 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                         border: `1px solid ${th.cardBorder}`,
                       }}
                     >
-                      {/* Etykieta Multimedia na górze: align: TOP_MID, y: 8, font: 14px Roboto */}
+                      <MediaMarquee text={trackTitle} top="8px" fontSize="24px" fontWeight={700} color={th.textPrimary} />
+                      <MediaMarquee text={trackArtist} top="38px" fontSize="18px" fontWeight={500} color={th.accent} />
+
                       <div
-                        className="absolute inset-x-0 text-center"
+                        className="absolute overflow-hidden rounded-full"
                         style={{
-                          top: '8px',
-                          fontSize: '14px',
-                          fontWeight: 400,
-                          color: th.accentMuted,
-                          fontFamily: 'Roboto, sans-serif',
+                          left: '40px',
+                          top: '68px',
+                          width: '380px',
+                          height: '8px',
+                          backgroundColor: th.cardBorder,
                         }}
                       >
-                        Multimedia
+                        <div
+                          className="h-full rounded-full"
+                          style={{ width: `${progress}%`, backgroundColor: th.accent }}
+                        />
                       </div>
 
-                      {/* Tytuł odtwarzanego utworu: id: lbl_media_title, align: TOP_MID, y: 26, font: 18px Roboto */}
-                      <div
-                        className="absolute inset-x-3 text-center truncate"
-                        style={{
-                          top: '26px',
-                          fontSize: '18px',
-                          fontWeight: 700,
-                          color: th.textPrimary,
-                          fontFamily: 'Roboto, sans-serif',
-                        }}
-                      >
-                        {trackTitle}
-                      </div>
-
-                      {/* Wykonawca utworu: id: lbl_media_artist, align: TOP_MID, y: 50, font: 14px Roboto */}
-                      <div
-                        className="absolute inset-x-3 text-center truncate"
-                        style={{
-                          top: '50px',
-                          fontSize: '14px',
-                          fontWeight: 500,
-                          color: th.accent,
-                          fontFamily: 'Roboto, sans-serif',
-                        }}
-                      >
-                        {trackArtist}
-                      </div>
-
-                      {/* Przyciski Nawigacji Muzycznej (y: 78, h: 66, w: 100, x: 60, 180, 300) */}
+                      {/* Przyciski nawigacji muzycznej */}
                       {/* Poprzedni utwór */}
                       <button
                         type="button"
@@ -725,9 +812,9 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                         className="absolute flex items-center justify-center transition-transform active:scale-95 cursor-pointer"
                         style={{
                           left: '60px',
-                          top: '78px',
+                          top: '88px',
                           width: '100px',
-                          height: '66px',
+                          height: '60px',
                           borderRadius: '10px',
                           backgroundColor: th.cardActiveBg,
                           border: `1px solid ${th.cardBorder}`,
@@ -750,9 +837,9 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                         className="absolute flex items-center justify-center transition-transform active:scale-95 cursor-pointer shadow-md"
                         style={{
                           left: '180px',
-                          top: '78px',
+                          top: '88px',
                           width: '100px',
-                          height: '66px',
+                          height: '60px',
                           borderRadius: '10px',
                           backgroundColor: th.cardActiveBg,
                           border: `2px solid ${th.cardActiveBorder}`,
@@ -772,9 +859,9 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                         className="absolute flex items-center justify-center transition-transform active:scale-95 cursor-pointer"
                         style={{
                           left: '300px',
-                          top: '78px',
+                          top: '88px',
                           width: '100px',
-                          height: '66px',
+                          height: '60px',
                           borderRadius: '10px',
                           backgroundColor: th.cardActiveBg,
                           border: `1px solid ${th.cardBorder}`,
@@ -787,17 +874,21 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                         {getMdiChar('SkipForward')}
                       </button>
 
-                      {/* Przyciski Regulacji Głośności (y: 154, h: 66, w: 100, x: 60, 180, 300) */}
+                      {/* Przyciski regulacji głośności */}
                       {/* Ciszej (Vol-) */}
                       <button
                         type="button"
-                        onClick={e => e.stopPropagation()}
+                        onClick={e => {
+                          e.stopPropagation();
+                          onUpdateSimulatedState('media_volume', Math.max(0, mediaVolume - 5));
+                          onUpdateSimulatedState('media_muted', false);
+                        }}
                         className="absolute flex items-center justify-center transition-transform active:scale-95 cursor-pointer"
                         style={{
-                          left: '60px',
-                          top: '154px',
-                          width: '100px',
-                          height: '66px',
+                          left: '66px',
+                          top: '160px',
+                          width: '88px',
+                          height: '54px',
                           borderRadius: '10px',
                           backgroundColor: th.cardActiveBg,
                           border: `1px solid ${th.cardBorder}`,
@@ -813,35 +904,42 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                       {/* Wycisz (Mute) */}
                       <button
                         type="button"
-                        onClick={e => e.stopPropagation()}
+                        onClick={e => {
+                          e.stopPropagation();
+                          onUpdateSimulatedState('media_muted', !isMuted);
+                        }}
                         className="absolute flex items-center justify-center transition-transform active:scale-95 cursor-pointer"
                         style={{
-                          left: '180px',
-                          top: '154px',
-                          width: '100px',
-                          height: '66px',
+                          left: '186px',
+                          top: '160px',
+                          width: '88px',
+                          height: '54px',
                           borderRadius: '10px',
                           backgroundColor: th.cardActiveBg,
                           border: `1px solid ${th.cardBorder}`,
-                          color: th.accent,
+                          color: isMuted ? '#F87171' : th.accent,
                           fontFamily: '"Material Design Icons", sans-serif',
                           fontSize: '28px',
                           lineHeight: 1,
                         }}
                       >
-                        {getMdiChar('VolumeMute')}
+                        {getMdiChar(isMuted ? 'VolumeX' : 'VolumeMute')}
                       </button>
 
                       {/* Głośniej (Vol+) */}
                       <button
                         type="button"
-                        onClick={e => e.stopPropagation()}
+                        onClick={e => {
+                          e.stopPropagation();
+                          onUpdateSimulatedState('media_volume', Math.min(100, mediaVolume + 5));
+                          onUpdateSimulatedState('media_muted', false);
+                        }}
                         className="absolute flex items-center justify-center transition-transform active:scale-95 cursor-pointer"
                         style={{
-                          left: '300px',
-                          top: '154px',
-                          width: '100px',
-                          height: '66px',
+                          left: '306px',
+                          top: '160px',
+                          width: '88px',
+                          height: '54px',
                           borderRadius: '10px',
                           backgroundColor: th.cardActiveBg,
                           border: `1px solid ${th.cardBorder}`,
@@ -853,6 +951,17 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                       >
                         {getMdiChar('VolumePlus')}
                       </button>
+                      <div
+                        className="absolute inset-x-0 text-center"
+                        style={{
+                          top: '218px',
+                          fontSize: '12px',
+                          color: th.accentMuted,
+                          fontFamily: 'Roboto, sans-serif',
+                        }}
+                      >
+                        Głośność: {isMuted ? 0 : Math.max(0, Math.min(100, mediaVolume))}%
+                      </div>
                     </div>
                   );
                 })()
