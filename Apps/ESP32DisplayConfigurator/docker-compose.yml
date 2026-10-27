@@ -1,0 +1,38 @@
+name: esp32displayconfigurator
+services:
+  app:
+    image: ghcr.io/kmchmielewski-wwa/esp32_display_configurator:latest
+    container_name: esp32-display-configurator
+    restart: unless-stopped
+    labels:
+      icon: https://raw.githubusercontent.com/kmchmielewski-wwa/esp32_display_configurator/main/Apps/ESP32DisplayConfigurator/icon.svg
+    ports:
+      - target: 80
+        published: "8095"
+        protocol: tcp
+x-casaos:
+  id: org.kmchmielewski.esp32displayconfigurator
+  architectures:
+    - amd64
+    - arm64
+  author: kmchmielewski-wwa
+  category: Home
+  description:
+    en_US: Configure ESP32 ESPHome touch displays with a visual editor and preview.
+    pl_PL: Konfiguruj dotykowe wyświetlacze ESP32 z ESPHome za pomocą edytora wizualnego i podglądu.
+  developer: kmchmielewski-wwa
+  icon: icon.svg
+  index: /
+  main: app
+  port_map: "8095"
+  scheme: http
+  tagline:
+    en_US: Visual ESPHome display configurator
+    pl_PL: Wizualny konfigurator wyświetlacza ESPHome
+  title:
+    en_US: ESP32 Display Configurator
+    pl_PL: Konfigurator wyświetlacza ESP32
+  version: "0.0.0"
+  website: https://github.com/kmchmielewski-wwa/esp32_display_configurator
+  repo: https://github.com/kmchmielewski-wwa/esp32_display_configurator
+  support: https://github.com/kmchmielewski-wwa/esp32_display_configurator/issues
