@@ -156,7 +156,7 @@ export const DEFAULT_SCREENS: DisplayScreen[] = [
   // 4. Bambu Lab A1 Mini (TYLKO podgląd postępów i parametrów - bez sterowania)
   {
     id: 'screen_bambu',
-    title: 'Bambu A1 Mini',
+    title: 'Bambu Lab A1 Mini',
     icon: 'Printer',
     widgets: [
       {
@@ -173,8 +173,8 @@ export const DEFAULT_SCREENS: DisplayScreen[] = [
       {
         id: 'w_bambu_progress_gauge',
         type: 'bambu_progress',
-        title: 'Postęp & Warstwy',
-        subtitle: 'Warstwa 184 z 270',
+        title: 'Postęp i pozostały czas',
+        subtitle: '',
         entityId: 'sensor.a1mini_0300da630400533_postep_drukowania',
         secondaryEntityId: 'sensor.a1mini_0300da630400533_pozostaly_czas',
         icon: 'Gauge',
@@ -184,8 +184,8 @@ export const DEFAULT_SCREENS: DisplayScreen[] = [
       {
         id: 'w_bambu_temps',
         type: 'bambu_temperatures',
-        title: 'Temperatury Dyszy i Stołu',
-        subtitle: 'Dysza 220°C / Stół 60°C',
+        title: 'Temperatury i wentylator',
+        subtitle: '',
         entityId: 'sensor.a1mini_0300da630400533_temperatura_dyszy',
         secondaryEntityId: 'sensor.a1mini_0300da630400533_temperatura_stolu',
         icon: 'Thermometer',
@@ -195,8 +195,8 @@ export const DEFAULT_SCREENS: DisplayScreen[] = [
       {
         id: 'w_bambu_details',
         type: 'bambu_stats_overview',
-        title: 'Szczegółowe Parametry Druku',
-        subtitle: 'Wentylator 100% · Czas 1h 24m · Online',
+        title: 'Nazwa drukowanego modelu',
+        subtitle: '',
         entityId: 'sensor.a1mini_0300da630400533_predkosc_wentylatora_chlodzacego',
         secondaryEntityId: 'sensor.a1mini_0300da630400533_calkowity_czas_pracy',
         icon: 'Activity',
@@ -212,16 +212,6 @@ export const DEFAULT_SCREENS: DisplayScreen[] = [
     title: 'Kalendarz',
     icon: 'Calendar',
     widgets: [
-      {
-        id: 'w_clock_weather',
-        type: 'clock_weather',
-        title: 'Zegar i Aura',
-        subtitle: 'Moja Lokalizacja',
-        entityId: 'weather.forecast_dom',
-        icon: 'CloudSun',
-        colSpan: 2,
-        colorAccent: 'sky',
-      },
       {
         id: 'w_sun_cycle',
         type: 'sun_widget',

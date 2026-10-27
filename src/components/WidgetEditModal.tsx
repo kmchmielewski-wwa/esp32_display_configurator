@@ -30,14 +30,14 @@ const WIDGET_TYPES: { id: WidgetType; label: string; description: string; defaul
   {
     id: 'media_single_player',
     label: 'Pojedynczy Odtwarzacz & Głośność',
-    description: 'Pełne sterowanie wybranym odtwarzaczem: głośność, mute, play/pause, okładka',
+    description: 'Sterowanie wybranym odtwarzaczem: głośność, wyciszanie i play/pause',
     defaultColSpan: 2,
     icon: 'Tv',
   },
   {
     id: 'bambu_stats_overview',
     label: 'Bambu Lab: Podgląd Parametrów',
-    description: 'Tylko odczyt: wentylator, prędkość druku, czas łączny, stan online',
+    description: 'Tylko odczyt: wentylator oraz całkowity czas pracy',
     defaultColSpan: 2,
     icon: 'Activity',
   },
@@ -65,14 +65,14 @@ const WIDGET_TYPES: { id: WidgetType; label: string; description: string; defaul
   {
     id: 'bambu_progress',
     label: 'Bambu Lab: Pasek Postępu',
-    description: 'Wskaźnik procentowy druku, aktualna warstwa i pozostały czas',
+    description: 'Postęp procentowy, pozostały czas i stan drukarki',
     defaultColSpan: 1,
     icon: 'Gauge',
   },
   {
     id: 'bambu_file_info',
     label: 'Bambu Lab: Karta Wydruku',
-    description: 'Nazwa pliku gcode, aktualny status i miniatura',
+    description: 'Nazwa aktualnego zadania i stan drukarki',
     defaultColSpan: 2,
     icon: 'Box',
   },
@@ -86,7 +86,7 @@ const WIDGET_TYPES: { id: WidgetType; label: string; description: string; defaul
   {
     id: 'media_player_card',
     label: 'Karta Multimediów (Duża)',
-    description: 'Pełny odtwarzacz: głośność, status, okładka i sterowanie',
+    description: 'Odtwarzacz z informacjami o utworze i sterowaniem',
     defaultColSpan: 2,
     icon: 'Tv',
   },
@@ -118,6 +118,14 @@ const WIDGET_TYPES: { id: WidgetType; label: string; description: string; defaul
     defaultColSpan: 1,
     icon: 'Calendar',
   },
+];
+
+const BUTTON_WIDGET_TYPES: WidgetType[] = [
+  'quick_slot_button',
+  'toggle_button',
+  'power_switch_card',
+  'sensor_gauge',
+  'system_info',
 ];
 
 const COLOR_ACCENTS: { id: ColorAccent; label: string; bgClass: string }[] = [
@@ -219,7 +227,7 @@ export const WidgetEditModal: React.FC<WidgetEditModalProps> = ({
           </div>
 
           {/* Titles */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className={`grid grid-cols-1 ${BUTTON_WIDGET_TYPES.includes(form.type) ? '' : 'sm:grid-cols-2'} gap-3`}>
             <div>
               <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">
                 Tytuł Kafelka
@@ -233,7 +241,7 @@ export const WidgetEditModal: React.FC<WidgetEditModalProps> = ({
                 placeholder="np. Oświetlenie Główne"
               />
             </div>
-            <div>
+            {!BUTTON_WIDGET_TYPES.includes(form.type) && <div>
               <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">
                 Podtytuł / Etykieta
               </label>
@@ -244,13 +252,19 @@ export const WidgetEditModal: React.FC<WidgetEditModalProps> = ({
                 className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-cyan-500"
                 placeholder="np. Salon / Wejście"
               />
-            </div>
+            </div>}
           </div>
 
           {/* HA Entities */}
           <div className="space-y-3">
             <EntitySelector
-              label="Główna Encja Home Assistant"
+              label={
+                form.type === 'bambu_file_info' ? 'Encja nazwy zadania' :
+                form.type === 'bambu_progress' ? 'Encja postępu drukowania' :
+                form.type === 'bambu_temperatures' ? 'Encja temperatury dyszy' :
+                form.type === 'bambu_stats_overview' ? 'Encja prędkości wentylatora' :
+                'Główna Encja Home Assistant'
+              }
               value={form.entityId}
               onChange={handleEntitySelected}
             />
@@ -258,11 +272,17 @@ export const WidgetEditModal: React.FC<WidgetEditModalProps> = ({
             {(form.type === 'power_switch_card' ||
               form.type === 'bambu_temperatures' ||
               form.type === 'bambu_progress' ||
+              form.type === 'bambu_file_info' ||
               form.type === 'sun_widget' ||
               form.type === 'system_info' ||
               form.type === 'toggle_button') && (
               <EntitySelector
-                label="Dodatkowa / Druga Encja (np. Pomiar W / Temp. Stołu)"
+                label={
+                  form.type === 'bambu_file_info' ? 'Encja stanu drukarki' :
+                  form.type === 'bambu_progress' ? 'Encja pozostałego czasu' :
+                  form.type === 'bambu_temperatures' ? 'Encja temperatury stołu' :
+                  'Dodatkowa / Druga Encja (np. Pomiar W / Temp. Stołu)'
+                }
                 value={form.secondaryEntityId}
                 onChange={entId => setForm({ ...form, secondaryEntityId: entId })}
               />

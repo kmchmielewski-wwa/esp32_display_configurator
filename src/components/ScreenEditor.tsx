@@ -238,7 +238,7 @@ export const ScreenEditor: React.FC<ScreenEditorProps> = ({
                     : 'bg-slate-950/60 border-slate-800/80 text-slate-300 hover:border-slate-700 hover:bg-slate-850'
                 }`}
               >
-                <div className="flex items-center gap-2.5 truncate">
+                <div className="flex min-w-0 flex-1 items-center gap-2.5">
                   <div
                     className={`p-1.5 rounded-lg shrink-0 ${
                       isSelected ? 'bg-cyan-500 text-slate-950 font-bold' : 'bg-slate-800 text-slate-400'
@@ -246,11 +246,8 @@ export const ScreenEditor: React.FC<ScreenEditorProps> = ({
                   >
                     <IconRenderer name={screen.icon} className="w-4 h-4" />
                   </div>
-                  <div className="truncate">
-                    <div className="text-xs font-bold truncate">{screen.title}</div>
-                    <div className="text-[10px] text-slate-400">
-                      {screen.widgets.length} {screen.widgets.length === 1 ? 'widget' : 'widgety'}
-                    </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-bold leading-4 line-clamp-2 break-words">{screen.title}</div>
                   </div>
                 </div>
 

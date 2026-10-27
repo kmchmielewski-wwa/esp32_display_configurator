@@ -506,6 +506,7 @@ export const HardwareSettings: React.FC<HardwareSettingsProps> = ({
           </div>
         </div>
 
+
         {config.useSecrets !== false ? (
           <div className="space-y-4">
             <div className="p-3.5 bg-emerald-950/20 border border-emerald-800/40 rounded-xl text-xs text-emerald-300 flex items-start gap-2.5">

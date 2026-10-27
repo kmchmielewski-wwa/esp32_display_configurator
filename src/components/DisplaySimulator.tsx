@@ -191,6 +191,51 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
 
   const activeScreen: DisplayScreen =
     config.screens[activeScreenIndex] || config.screens[0];
+  const getBambuValue = (
+    type: DisplayScreen['widgets'][number]['type'],
+    field: 'entityId' | 'secondaryEntityId',
+    fallback: string,
+  ) => {
+    const widget = activeScreen.widgets.find(item => item.type === type);
+    const entityId = widget?.[field];
+    const value = entityId ? entityStates[entityId] : undefined;
+    return value === undefined || value === null || value === '' || value === 'unknown' || value === 'unavailable'
+      ? fallback
+      : String(value);
+  };
+  const bambuJob = getBambuValue('bambu_file_info', 'entityId', 'Brak aktywnego zadania');
+  const bambuState = getBambuValue('bambu_file_info', 'secondaryEntityId', '--');
+  const bambuProgressValue = getBambuValue('bambu_progress', 'entityId', '');
+  const bambuProgress = bambuProgressValue ? Number(bambuProgressValue) : Number.NaN;
+  const bambuRemaining = getBambuValue('bambu_progress', 'secondaryEntityId', '--');
+  const bambuNozzle = getBambuValue('bambu_temperatures', 'entityId', '--');
+  const bambuBed = getBambuValue('bambu_temperatures', 'secondaryEntityId', '--');
+  const bambuFan = getBambuValue('bambu_stats_overview', 'entityId', '--');
+  const formattedBambuRemaining = (() => {
+    const raw = bambuRemaining.trim();
+    if (!raw || raw === '--') return '--';
+
+    const clock = raw.match(/^(\d+):(\d{1,2})(?::(\d{1,2}))?$/);
+    if (clock) {
+      const totalMinutes = clock[3] === undefined
+        ? Number(clock[1]) * 60 + Number(clock[2])
+        : Math.round((Number(clock[1]) * 3600 + Number(clock[2]) * 60 + Number(clock[3])) / 60);
+      return `${Math.floor(totalMinutes / 60)}h ${String(totalMinutes % 60).padStart(2, '0')}min`;
+    }
+
+    const hoursAndMinutes = raw.match(/(?:(\d+(?:\.\d+)?)\s*h)?\s*(?:(\d+(?:\.\d+)?)\s*(?:m|min))?/i);
+    if (hoursAndMinutes && (hoursAndMinutes[1] || hoursAndMinutes[2])) {
+      const totalMinutes = Math.round(Number(hoursAndMinutes[1] || 0) * 60 + Number(hoursAndMinutes[2] || 0));
+      return `${Math.floor(totalMinutes / 60)}h ${String(totalMinutes % 60).padStart(2, '0')}min`;
+    }
+
+    const numericMinutes = Number(raw);
+    if (Number.isFinite(numericMinutes)) {
+      const totalMinutes = Math.round(numericMinutes);
+      return `${Math.floor(totalMinutes / 60)}h ${String(totalMinutes % 60).padStart(2, '0')}min`;
+    }
+    return raw;
+  })();
 
   // Dokładna paleta motywu zgodna 1:1 z ESPHome / LVGL
   const th = getThemeCssColors(config.theme || 'olive_green');
@@ -444,36 +489,40 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                       border: `1px solid ${th.cardBorder}`,
                     }}
                   >
-                    {/* lbl_home_clock: x: 16, y: 8, font: 38px Roboto, text_color: 0xFFFFFF */}
-                    <span
-                      className="absolute"
+                    <div
+                      className="absolute flex flex-col justify-center"
                       style={{
                         left: '16px',
-                        top: '8px',
-                        fontSize: '38px',
-                        lineHeight: 1,
-                        fontWeight: 700,
-                        color: '#FFFFFF',
-                        fontFamily: 'Roboto, sans-serif',
+                        top: '50%',
+                        height: '68px',
+                        transform: 'translateY(-50%)',
                       }}
                     >
-                      {timeFormatted}
-                    </span>
-
-                    {/* lbl_home_date: x: 16, y: 54, font: 14px Roboto, text_color: th.accent */}
-                    <span
-                      className="absolute truncate"
-                      style={{
-                        left: '16px',
-                        top: '54px',
-                        maxWidth: '280px',
-                        fontSize: '14px',
-                        color: th.accent,
-                        fontFamily: 'Roboto, sans-serif',
-                      }}
-                    >
-                      {dateEsphomeFormatted}
-                    </span>
+                      <span
+                        style={{
+                          fontSize: '38px',
+                          lineHeight: 1,
+                          fontWeight: 700,
+                          color: '#FFFFFF',
+                          fontFamily: 'Roboto, sans-serif',
+                        }}
+                      >
+                        {timeFormatted}
+                      </span>
+                      <span
+                        className="truncate"
+                        style={{
+                          maxWidth: '280px',
+                          marginTop: '4px',
+                          fontSize: '14px',
+                          lineHeight: '17px',
+                          color: th.accent,
+                          fontFamily: 'Roboto, sans-serif',
+                        }}
+                      >
+                        {dateEsphomeFormatted}
+                      </span>
+                    </div>
 
                     {/* lbl_home_temp: x: 320, y: 12, font: 18px Roboto, text_color: th.accent */}
                     <span
@@ -495,7 +544,7 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                     <span
                       className="absolute"
                       style={{
-                        left: '320px',
+                        left: '294px',
                         top: '44px',
                         fontSize: '20px',
                         lineHeight: 1,
@@ -510,7 +559,7 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                     <span
                       className="absolute truncate"
                       style={{
-                        left: '346px',
+                        left: '320px',
                         top: '46px',
                         right: '12px',
                         fontSize: '14px',
@@ -541,7 +590,7 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                       let iconColor = '#64748B';
 
                       if (isSensor) {
-                        statusText = (widget.entityId && entityStates[widget.entityId] !== undefined) ? `${entityStates[widget.entityId]}%` : (widget.subtitle || 'Postęp');
+                        statusText = (widget.entityId && entityStates[widget.entityId] !== undefined) ? `${entityStates[widget.entityId]}%` : 'Postęp';
                         statusColor = th.accentMuted;
                         iconColor = th.accent;
                       } else if (widget.entityId?.startsWith('media_player.')) {
@@ -600,28 +649,10 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                             {widget.title}
                           </div>
 
-                          {/* Opis, do dwóch wierszy */}
-                          <div
-                            className="absolute inset-x-1.5 text-center overflow-hidden"
-                            style={{
-                              top: '42px',
-                              height: '30px',
-                              fontSize: '12px',
-                              lineHeight: '15px',
-                              color: th.accentMuted,
-                              fontFamily: 'Roboto, sans-serif',
-                              display: '-webkit-box',
-                              WebkitBoxOrient: 'vertical',
-                              WebkitLineClamp: 2,
-                            }}
-                          >
-                            {widget.subtitle}
-                          </div>
-
                           <div
                             className="absolute inset-x-1.5 text-center"
                             style={{
-                              top: widget.subtitle?.trim() ? '75px' : '42px',
+                              top: '52px',
                               fontSize: '12px',
                               fontWeight: isActive ? 600 : 400,
                               color: statusColor,
@@ -685,7 +716,7 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                           className="absolute inset-x-2 text-center overflow-hidden"
                           style={{
                             top: '3px',
-                            height: '34px',
+                            height: '40px',
                             fontSize: '14px',
                             lineHeight: '17px',
                             fontWeight: 500,
@@ -701,29 +732,11 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                           {widget.title}
                         </div>
 
-                        {/* Opis, do dwóch wierszy */}
-                        <div
-                          className="absolute inset-x-2 text-center overflow-hidden"
-                          style={{
-                            top: '38px',
-                            height: '26px',
-                            fontSize: '12px',
-                            lineHeight: '13px',
-                            color: th.accentMuted,
-                            fontFamily: 'Roboto, sans-serif',
-                            display: '-webkit-box',
-                            WebkitBoxOrient: 'vertical',
-                            WebkitLineClamp: 2,
-                          }}
-                        >
-                          {widget.subtitle}
-                        </div>
-
                         {/* Stan przełącznika */}
                         <div
                           className="absolute inset-x-2 text-center"
                           style={{
-                            top: widget.subtitle?.trim() ? '66px' : '38px',
+                            top: '48px',
                             fontSize: '12px',
                             fontWeight: isActive ? 600 : 400,
                             color: statusColor,
@@ -771,7 +784,6 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                     entityStates['sensor.media_artist'] ||
                     entityStates['media_artist'] ||
                     (isPlaying ? 'Queen' : 'Brak wykonawcy');
-
                   return (
                     <div
                       className="absolute select-none"
@@ -892,7 +904,7 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                           borderRadius: '10px',
                           backgroundColor: th.cardActiveBg,
                           border: `1px solid ${th.cardBorder}`,
-                          color: th.accent,
+                          color: '#FFFFFF',
                           fontFamily: '"Material Design Icons", sans-serif',
                           fontSize: '28px',
                           lineHeight: 1,
@@ -917,7 +929,7 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                           borderRadius: '10px',
                           backgroundColor: th.cardActiveBg,
                           border: `1px solid ${th.cardBorder}`,
-                          color: isMuted ? '#F87171' : th.accent,
+                          color: '#FFFFFF',
                           fontFamily: '"Material Design Icons", sans-serif',
                           fontSize: '28px',
                           lineHeight: 1,
@@ -943,7 +955,7 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                           borderRadius: '10px',
                           backgroundColor: th.cardActiveBg,
                           border: `1px solid ${th.cardBorder}`,
-                          color: th.accent,
+                          color: '#FFFFFF',
                           fontFamily: '"Material Design Icons", sans-serif',
                           fontSize: '28px',
                           lineHeight: 1,
@@ -1006,7 +1018,7 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                         fontWeight: 500,
                       }}
                     >
-                      Bambu Lab A1 Mini · esp32_cyd_enclosure.gcode
+                        Bambu Lab A1 Mini
                     </span>
                   </div>
 
@@ -1017,7 +1029,7 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                       left: '10px',
                       top: '54px',
                       width: '224px',
-                      height: '102px',
+                      height: '132px',
                       borderRadius: '12px',
                       backgroundColor: th.cardBg,
                       border: `1px solid ${th.cardBorder}`,
@@ -1048,7 +1060,7 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                         fontWeight: 500,
                       }}
                     >
-                      Postęp: 68%
+                      Postęp: {Number.isFinite(bambuProgress) ? `${Math.round(bambuProgress)}%` : '--'}
                     </span>
 
                     {/* Row 2: Layers */}
@@ -1075,7 +1087,7 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                         fontFamily: 'Roboto, sans-serif',
                       }}
                     >
-                      Warstwa: 184 / 270
+                      Status: {bambuState}
                     </span>
 
                     {/* Row 3: Clock */}
@@ -1102,8 +1114,26 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                         fontFamily: 'Roboto, sans-serif',
                       }}
                     >
-                      Pozostało: 42 min
+                      Pozostało: {formattedBambuRemaining}
                     </span>
+                    <div
+                      className="absolute overflow-hidden rounded-full"
+                      style={{
+                        left: '38px',
+                        top: '96px',
+                        width: '174px',
+                        height: '12px',
+                        backgroundColor: th.cardBorder,
+                      }}
+                    >
+                      <div
+                        className="h-full rounded-full"
+                        style={{
+                          width: `${Number.isFinite(bambuProgress) ? Math.max(0, Math.min(100, bambuProgress)) : 0}%`,
+                          backgroundColor: th.accent,
+                        }}
+                      />
+                    </div>
                   </div>
 
                   {/* Rząd 2, Prawa: Karta Temperatur (x: 246, y: 54, w: 224, h: 102, radius: 12) */}
@@ -1113,7 +1143,7 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                       left: '246px',
                       top: '54px',
                       width: '224px',
-                      height: '102px',
+                      height: '132px',
                       borderRadius: '12px',
                       backgroundColor: th.cardBg,
                       border: `1px solid ${th.cardBorder}`,
@@ -1144,7 +1174,7 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                         fontWeight: 500,
                       }}
                     >
-                      Dysza: 220°C / 220°C
+                      Dysza: {bambuNozzle}°C
                     </span>
 
                     {/* Row 2: Stół */}
@@ -1172,7 +1202,7 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                         fontWeight: 500,
                       }}
                     >
-                      Stół: 60°C / 60°C
+                      Stół: {bambuBed}°C
                     </span>
 
                     {/* Row 3: Wentylator */}
@@ -1199,181 +1229,50 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                         fontFamily: 'Roboto, sans-serif',
                       }}
                     >
-                      Wentylator: 100%
+                      Wentylator: {bambuFan}%
                     </span>
                   </div>
 
-                  {/* Rząd 3: Parametry druku i status (x: 10, y: 162, w: 460, h: 86, radius: 12) */}
+                  {/* Nazwa drukowanego modelu */}
                   <div
                     className="absolute select-none"
                     style={{
                       left: '10px',
-                      top: '162px',
+                      top: '194px',
                       width: '460px',
-                      height: '86px',
+                      height: '54px',
                       borderRadius: '12px',
                       backgroundColor: th.cardBg,
                       border: `1px solid ${th.cardBorder}`,
                     }}
                   >
                     <span
-                      className="absolute"
-                      style={{
-                        left: '16px',
-                        top: '10px',
-                        fontSize: '20px',
-                        lineHeight: 1,
-                        color: th.accent,
-                        fontFamily: '"Material Design Icons", sans-serif',
-                      }}
-                    >
-                      {getMdiChar('Radio')}
-                    </span>
-                    <span
                       className="absolute truncate"
                       style={{
-                        left: '42px',
-                        top: '11px',
-                        right: '16px',
+                        left: '16px',
+                        top: '17px',
+                        right: '14px',
                         fontSize: '14px',
                         color: th.textPrimary,
                         fontFamily: 'Roboto, sans-serif',
                         fontWeight: 500,
                       }}
                     >
-                      Status: Drukowanie · Profil: Standard 0.2mm
-                    </span>
-
-                    <span
-                      className="absolute"
-                      style={{
-                        left: '16px',
-                        top: '44px',
-                        fontSize: '20px',
-                        lineHeight: 1,
-                        color: th.accentMuted,
-                        fontFamily: '"Material Design Icons", sans-serif',
-                      }}
-                    >
-                      {getMdiChar('Clock')}
-                    </span>
-                    <span
-                      className="absolute truncate"
-                      style={{
-                        left: '42px',
-                        top: '45px',
-                        right: '16px',
-                        fontSize: '14px',
-                        color: th.accentMuted,
-                        fontFamily: 'Roboto, sans-serif',
-                      }}
-                    >
-                      Całkowity czas pracy zadania: 1h 24m · Drukarka Online
+                      Model: {bambuJob}
                     </span>
                   </div>
                 </>
               ) : activeScreen?.id === 'screen_calendar' ? (
                 /* EKRAN 5: Kalendarz Familijny & Zmierzch (1:1 z LVGL) */
                 <>
-                  {/* Rząd 1: Zegar i Aura (x: 10, y: 6, w: 460, h: 64, radius: 12) */}
+                  {/* Cykl Słońca (x: 10, y: 6, w: 140, h: 246, radius: 12) */}
                   <div
                     className="absolute select-none"
                     style={{
                       left: '10px',
                       top: '6px',
-                      width: '460px',
-                      height: '64px',
-                      borderRadius: '12px',
-                      backgroundColor: th.cardBg,
-                      border: `1px solid ${th.cardBorder}`,
-                    }}
-                  >
-                    {/* Clock 38px */}
-                    <span
-                      className="absolute"
-                      style={{
-                        left: '16px',
-                        top: '8px',
-                        fontSize: '38px',
-                        lineHeight: 1,
-                        fontWeight: 700,
-                        color: '#FFFFFF',
-                        fontFamily: 'Roboto, sans-serif',
-                      }}
-                    >
-                      {timeFormatted}
-                    </span>
-
-                    {/* Date 14px */}
-                    <span
-                      className="absolute truncate"
-                      style={{
-                        left: '16px',
-                        top: '44px',
-                        maxWidth: '280px',
-                        fontSize: '14px',
-                        color: th.accent,
-                        fontFamily: 'Roboto, sans-serif',
-                      }}
-                    >
-                      {dateEsphomeFormatted}
-                    </span>
-
-                    {/* Temp 18px */}
-                    <span
-                      className="absolute"
-                      style={{
-                        left: '320px',
-                        top: '10px',
-                        fontSize: '18px',
-                        lineHeight: 1,
-                        fontWeight: 700,
-                        color: th.accent,
-                        fontFamily: 'Roboto, sans-serif',
-                      }}
-                    >
-                      {weatherTemp}°C
-                    </span>
-
-                    {/* Weather Icon 20px MDI */}
-                    <span
-                      className="absolute"
-                      style={{
-                        left: '320px',
-                        top: '38px',
-                        fontSize: '20px',
-                        lineHeight: 1,
-                        color: '#FBBF24',
-                        fontFamily: '"Material Design Icons", sans-serif',
-                      }}
-                    >
-                      {getMdiChar('Sun')}
-                    </span>
-
-                    {/* Weather Desc 14px */}
-                    <span
-                      className="absolute truncate"
-                      style={{
-                        left: '346px',
-                        top: '39px',
-                        right: '12px',
-                        fontSize: '14px',
-                        color: '#FBBF24',
-                        fontFamily: 'Roboto, sans-serif',
-                      }}
-                    >
-                      {weatherDesc}
-                    </span>
-                  </div>
-
-                  {/* Rząd 2, Lewa: Cykl Słońca (x: 10, y: 76, w: 140, h: 176, radius: 12) */}
-                  <div
-                    className="absolute select-none"
-                    style={{
-                      left: '10px',
-                      top: '76px',
                       width: '140px',
-                      height: '176px',
+                      height: '246px',
                       borderRadius: '12px',
                       backgroundColor: th.cardBg,
                       border: `1px solid ${th.cardBorder}`,
@@ -1382,7 +1281,7 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                     <div
                       className="absolute inset-x-0 text-center"
                       style={{
-                        top: '10px',
+                        top: '14px',
                         fontSize: '14px',
                         color: th.accent,
                         fontFamily: 'Roboto, sans-serif',
@@ -1397,7 +1296,7 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                       className="absolute"
                       style={{
                         left: '14px',
-                        top: '46px',
+                        top: '76px',
                         fontSize: '20px',
                         lineHeight: 1,
                         color: '#FBBF24',
@@ -1410,7 +1309,7 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                       className="absolute"
                       style={{
                         left: '42px',
-                        top: '47px',
+                        top: '77px',
                         fontSize: '14px',
                         color: '#FBBF24',
                         fontFamily: 'Roboto, sans-serif',
@@ -1425,7 +1324,7 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                       className="absolute"
                       style={{
                         left: '14px',
-                        top: '82px',
+                        top: '132px',
                         fontSize: '20px',
                         lineHeight: 1,
                         color: th.accentMuted,
@@ -1438,7 +1337,7 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                       className="absolute"
                       style={{
                         left: '42px',
-                        top: '83px',
+                        top: '133px',
                         fontSize: '14px',
                         color: th.accentMuted,
                         fontFamily: 'Roboto, sans-serif',
@@ -1451,7 +1350,7 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                     <div
                       className="absolute inset-x-0 text-center"
                       style={{
-                        bottom: '12px',
+                        bottom: '16px',
                         fontSize: '14px',
                         color: th.accentMuted,
                         fontFamily: 'Roboto, sans-serif',
@@ -1461,14 +1360,14 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                     </div>
                   </div>
 
-                  {/* Rząd 2, Prawa: Kalendarz Familijny (x: 156, y: 76, w: 314, h: 176, radius: 12) */}
+                  {/* Kalendarz Familijny (x: 156, y: 6, w: 314, h: 246, radius: 12) */}
                   <div
                     className="absolute select-none"
                     style={{
                       left: '156px',
-                      top: '76px',
+                      top: '6px',
                       width: '314px',
-                      height: '176px',
+                      height: '246px',
                       borderRadius: '12px',
                       backgroundColor: th.cardBg,
                       border: `1px solid ${th.cardBorder}`,
@@ -1502,50 +1401,54 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                       Kalendarz Familijny (5 wydarzeń)
                     </span>
 
-                    {/* 5 Wydarzeń 1:1 z YAML */}
-                    {[
-                      { time: 'NDZ 14:00', text: 'Obiad rodzinny', color: '#FBBF24', y: 36 },
-                      {
-                        time: 'PON 17:30',
-                        text: 'Trening dzieci / Zajęcia',
-                        color: '#38BDF8',
-                        y: 64,
-                      },
-                      { time: 'WT 10:15', text: 'Wizyta u lekarza', color: '#FB7185', y: 92 },
-                      { time: 'CZW Cały', text: 'Urodziny Mamy', color: '#C084FC', y: 120 },
-                      { time: 'SOB 09:00', text: 'Wyjazd weekendowy', color: '#34D399', y: 148 },
-                    ].map((ev, eIdx) => (
+                    {(
+                      Array.isArray(entityStates['calendar.familijny']?.events)
+                        ? entityStates['calendar.familijny'].events.slice(0, 5)
+                        : [{
+                            start: '',
+                            summary: 'Wydarzenia pobiera urządzenie z Home Assistant',
+                          }]
+                    ).map((ev: { start?: string; summary?: string }, eIdx: number) => {
+                      const start = ev.start || '';
+                      const displayDateTime = start.length >= 16
+                        ? `${start.slice(8, 10)}.${start.slice(5, 7)} ${start.slice(11, 16)}`
+                        : start.length >= 10
+                          ? `${start.slice(8, 10)}.${start.slice(5, 7)} cały dzień`
+                          : '';
+                      return (
                       <div
-                        key={eIdx}
+                        key={`${start}-${ev.summary || eIdx}`}
                         className="absolute inset-x-0"
-                        style={{ top: `${ev.y}px` }}
+                        style={{ top: `${42 + eIdx * 39}px` }}
                       >
                         <span
                           className="absolute"
                           style={{
                             left: '14px',
+                            width: '102px',
                             fontSize: '14px',
                             fontWeight: 500,
-                            color: ev.color,
+                            color: '#FBBF24',
                             fontFamily: 'Roboto, sans-serif',
                           }}
                         >
-                          {ev.time}
+                          {displayDateTime}
                         </span>
                         <span
                           className="absolute truncate"
                           style={{
-                            left: '95px',
+                            left: '120px',
                             right: '12px',
                             fontSize: '14px',
                             color: th.textPrimary,
                             fontFamily: 'Roboto, sans-serif',
                           }}
                         >
-                          {ev.text}
+                          {ev.summary || '(bez tytułu)'}
                         </span>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </>
               ) : (
@@ -1596,7 +1499,7 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                         const isSens = cw.entityId?.startsWith('sensor.');
                         const isActive = isEntityActive(cw.entityId);
                         const statusText = isSens
-                          ? ((cw.entityId && entityStates[cw.entityId] !== undefined) ? `${entityStates[cw.entityId]}` : (cw.subtitle || 'Czujnik'))
+                          ? ((cw.entityId && entityStates[cw.entityId] !== undefined) ? `${entityStates[cw.entityId]}` : 'Czujnik')
                           : (isActive ? 'WŁ.' : 'WYŁ.');
                         const statusColor = isSens ? th.accentMuted : (isActive ? th.accent : '#64748B');
                         const iconColor = isActive ? ACTIVE_ICON_COLOR : '#64748B';
@@ -1621,13 +1524,20 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                             }}
                           >
                             <div
-                              className="absolute inset-x-2 text-center truncate"
+                              className="absolute inset-x-2 text-center overflow-hidden"
                               style={{
                                 top: '8px',
+                                height: '38px',
                                 fontSize: '14px',
+                                lineHeight: '17px',
                                 fontWeight: 500,
                                 color: th.textPrimary,
                                 fontFamily: 'Roboto, sans-serif',
+                                display: '-webkit-box',
+                                WebkitBoxOrient: 'vertical',
+                                WebkitLineClamp: 2,
+                                wordBreak: 'normal',
+                                overflowWrap: 'normal',
                               }}
                             >
                               {cw.title}
@@ -1635,7 +1545,7 @@ export const DisplaySimulator: React.FC<DisplaySimulatorProps> = ({
                             <div
                               className="absolute inset-x-2 text-center truncate"
                               style={{
-                                top: '30px',
+                                top: '50px',
                                 fontSize: '14px',
                                 fontWeight: isActive ? 600 : 400,
                                 color: statusColor,

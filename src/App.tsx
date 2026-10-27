@@ -40,66 +40,10 @@ export default function App() {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed.hardwarePresetId) {
-          // Migration: ensure media player has only 'Multimedia' title and no extra text,
-          // calendar has family events without shopping list and without office desk node,
-          // and weather uses weather.forecast_dom for user local weather.
+          // Keep saved screen and widget layouts intact while applying targeted legacy fixes.
           const migratedScreens = parsed.screens?.map((scr: any) => {
-            if (scr.id === 'screen_media') {
-              return {
-                ...scr,
-                title: 'Multimedia',
-                widgets: [
-                  {
-                    id: 'w_single_media',
-                    type: 'media_single_player',
-                    title: 'Multimedia',
-                    subtitle: '',
-                    entityId: 'media_player.mi_box_2',
-                    icon: 'Tv',
-                    colSpan: 2,
-                    colorAccent: 'cyan',
-                  },
-                ],
-              };
-            }
-            if (scr.id === 'screen_calendar') {
-              return {
-                ...scr,
-                title: 'Kalendarz',
-                widgets: [
-                  {
-                    id: 'w_clock_weather',
-                    type: 'clock_weather',
-                    title: 'Zegar i Aura',
-                    subtitle: 'Moja Lokalizacja',
-                    entityId: 'weather.forecast_dom',
-                    icon: 'CloudSun',
-                    colSpan: 2,
-                    colorAccent: 'sky',
-                  },
-                  {
-                    id: 'w_sun_cycle',
-                    type: 'sun_widget',
-                    title: 'Słońce & Zmierzch',
-                    subtitle: 'Wschód / Zachód',
-                    entityId: 'sun.sun',
-                    secondaryEntityId: 'sensor.sun_next_setting',
-                    icon: 'Sunset',
-                    colSpan: 1,
-                    colorAccent: 'amber',
-                  },
-                  {
-                    id: 'w_family_calendar',
-                    type: 'family_calendar_events',
-                    title: 'Kalendarz Familijny',
-                    subtitle: '5 wydarzeń',
-                    entityId: 'calendar.familijny',
-                    icon: 'Calendar',
-                    colSpan: 1,
-                    colorAccent: 'emerald',
-                  },
-                ],
-              };
+            if (scr.id === 'screen_bambu' && scr.title === 'Bambu A1 Mini') {
+              return { ...scr, title: 'Bambu Lab A1 Mini' };
             }
             if (scr.id === 'screen_home') {
               return {

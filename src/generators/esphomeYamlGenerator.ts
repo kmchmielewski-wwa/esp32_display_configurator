@@ -623,12 +623,16 @@ export function generateEsphomeYaml(config: ConfigProfile, knownEntities?: HAEnt
   }
 
   const hasHomeScreen = config.screens.some(s => s.id === 'screen_home');
-  const hasCalendarScreen = config.screens.some(s => s.id === 'screen_calendar');
   const mediaScreen = config.screens.find(s => s.id === 'screen_media');
   const hasMediaScreen = Boolean(mediaScreen);
   const mediaWidget = mediaScreen?.widgets[0];
   const mediaEntityId = mediaWidget?.entityId || 'media_player.mi_box_2';
-
+  const calendarScreen = config.screens.find(s => s.id === 'screen_calendar');
+  const calendarWidget = calendarScreen?.widgets.find(w => w.type === 'family_calendar_events');
+  const calendarEntityId = calendarWidget?.entityId?.startsWith('calendar.')
+    ? calendarWidget.entityId
+    : 'calendar.familijny';
+  const calendarEntityIdLiteral = JSON.stringify(calendarEntityId);
   // Słownik znanych stanów encji (z zaimportowanej bazy lub domyślnej listy RAW_CSV_ENTITIES)
   const allKnown = knownEntities && knownEntities.length > 0 ? knownEntities : RAW_CSV_ENTITIES;
   const knownStates: Record<string, string> = {};
@@ -678,6 +682,108 @@ export function generateEsphomeYaml(config: ConfigProfile, knownEntities?: HAEnt
   const uniqueSensors = Array.from(new Set(sensorEntities)).filter(id => id !== weatherEntityId);
   const uniqueBinaries = Array.from(new Set([...binaryEntities, ...Object.keys(entityLabelMap)]));
   const uniqueTexts = Array.from(new Set(textSensorEntities)).filter(id => id !== weatherEntityId && id !== mediaEntityId);
+  const bambuScreen = config.screens.find(screen => screen.id === 'screen_bambu');
+  const bambuHeaderWidget = bambuScreen?.widgets.find(widget => widget.type === 'bambu_file_info');
+  const bambuProgressWidget = bambuScreen?.widgets.find(widget => widget.type === 'bambu_progress');
+  const bambuTemperaturesWidget = bambuScreen?.widgets.find(widget => widget.type === 'bambu_temperatures');
+  const bambuStatsWidget = bambuScreen?.widgets.find(widget => widget.type === 'bambu_stats_overview');
+  const bambuFields = {
+    job: bambuHeaderWidget?.entityId,
+    state: bambuHeaderWidget?.secondaryEntityId,
+    progress: bambuProgressWidget?.entityId,
+    remaining: bambuProgressWidget?.secondaryEntityId,
+    nozzle: bambuTemperaturesWidget?.entityId,
+    bed: bambuTemperaturesWidget?.secondaryEntityId,
+    fan: bambuStatsWidget?.entityId,
+  };
+  const remainingUnit = allKnown.find(entity => entity.entity_id === bambuFields.remaining)?.unit?.toLowerCase();
+  const bambuNumericUpdates = new Map<string, string[]>();
+  const bambuTextUpdates = new Map<string, string[]>();
+  const addBambuUpdate = (updates: Map<string, string[]>, entityId: string | undefined, yaml: string) => {
+    if (!entityId) return;
+    updates.set(entityId, [...(updates.get(entityId) || []), yaml]);
+  };
+  addBambuUpdate(bambuNumericUpdates, bambuFields.progress, `        - lvgl.label.update:
+            id: lbl_bambu_progress
+            text: !lambda |-
+              if (!std::isfinite(x)) return std::string("Postęp: --");
+              char buf[20];
+              snprintf(buf, sizeof(buf), "Postęp: %.0f%%", x);
+              return std::string(buf);
+        - lvgl.bar.update:
+            id: bar_bambu_progress
+            value: !lambda |-
+              return static_cast<int>(!std::isfinite(x) ? 0 : (x < 0 ? 0 : (x > 100 ? 100 : x)));`);
+  const remainingDivisor = ['s', 'sec', 'second', 'seconds', 'sekunda', 'sekundy', 'sekund'].includes(remainingUnit || '')
+    ? '60.0'
+    : ['ms', 'millisecond', 'milliseconds', 'milisekunda', 'milisekundy'].includes(remainingUnit || '')
+      ? '60000.0'
+      : '1.0';
+  if (bambuFields.remaining && uniqueSensors.includes(bambuFields.remaining)) {
+    addBambuUpdate(bambuNumericUpdates, bambuFields.remaining, `        - lvgl.label.update:
+            id: lbl_bambu_remaining
+            text: !lambda |-
+              if (!std::isfinite(x)) return std::string("Pozostało: --");
+              const double remaining_value = x < 0 ? 0.0 : x;
+              const int total_minutes = static_cast<int>(std::round(remaining_value / ${remainingDivisor}));
+              char buf[32];
+              snprintf(buf, sizeof(buf), "Pozostało: %dh %02dmin", total_minutes / 60, total_minutes % 60);
+              return std::string(buf);`);
+  } else {
+    addBambuUpdate(bambuTextUpdates, bambuFields.remaining, `        - lvgl.label.update:
+            id: lbl_bambu_remaining
+            text: !lambda |-
+              if (x.empty() || x == "unavailable" || x == "unknown") return std::string("Pozostało: --");
+              int hours = 0, minutes = 0, seconds = 0;
+              int total_minutes = 0;
+              if (sscanf(x.c_str(), "%d:%d:%d", &hours, &minutes, &seconds) == 3) {
+                total_minutes = static_cast<int>(std::round((hours * 3600.0 + minutes * 60.0 + seconds) / 60.0));
+              } else if (sscanf(x.c_str(), "%d:%d", &hours, &minutes) == 2) {
+                total_minutes = hours * 60 + minutes;
+              } else if (sscanf(x.c_str(), "%d h %d min", &hours, &minutes) == 2) {
+                total_minutes = hours * 60 + minutes;
+              } else {
+                char* end = nullptr;
+                const double numeric_value = std::strtod(x.c_str(), &end);
+                if (end == x.c_str() || *end != '\\0') return std::string("Pozostało: ") + x;
+                total_minutes = static_cast<int>(std::round(numeric_value / ${remainingDivisor}));
+              }
+              total_minutes = std::max(0, total_minutes);
+              char buf[32];
+              snprintf(buf, sizeof(buf), "Pozostało: %dh %02dmin", total_minutes / 60, total_minutes % 60);
+              return std::string(buf);`);
+  }
+  addBambuUpdate(bambuNumericUpdates, bambuFields.nozzle, `        - lvgl.label.update:
+            id: lbl_bambu_nozzle
+            text: !lambda |-
+              char buf[24];
+              snprintf(buf, sizeof(buf), "Dysza: %.0f°C", x);
+              return std::string(buf);`);
+  addBambuUpdate(bambuNumericUpdates, bambuFields.bed, `        - lvgl.label.update:
+            id: lbl_bambu_bed
+            text: !lambda |-
+              char buf[24];
+              snprintf(buf, sizeof(buf), "Stół: %.0f°C", x);
+              return std::string(buf);`);
+  addBambuUpdate(bambuNumericUpdates, bambuFields.fan, `        - lvgl.label.update:
+            id: lbl_bambu_fan
+            text: !lambda |-
+              char buf[24];
+              snprintf(buf, sizeof(buf), "Wentylator: %.0f%%", x);
+              return std::string(buf);`);
+  addBambuUpdate(bambuTextUpdates, bambuFields.job, `        - lvgl.label.update:
+            id: lbl_bambu_job
+            text: !lambda |-
+              return (!x.empty() && x != "unavailable" && x != "unknown") ? x : std::string("Brak aktywnego zadania");`);
+  addBambuUpdate(bambuTextUpdates, bambuFields.state, `        - lvgl.label.update:
+            id: lbl_bambu_state
+            text: !lambda |-
+              if (x.empty() || x == "unavailable" || x == "unknown") return std::string("Status: --");
+              return std::string("Status: ") + x;`);
+  const onValueUpdates = (updates: Map<string, string[]>, entityId: string) => {
+    const callbacks = updates.get(entityId);
+    return callbacks?.length ? `\n    on_value:\n      then:\n${callbacks.join('\n')}` : '';
+  };
 
   const isWeatherDomain = weatherEntityId.startsWith('weather.');
 
@@ -698,12 +804,6 @@ ${isWeatherDomain ? '    attribute: temperature\n' : ''}    on_value:
             then:
 ${hasHomeScreen ? `              - lvgl.label.update:
                   id: lbl_home_temp
-                  text: !lambda |-
-                    char buf[16];
-                    snprintf(buf, sizeof(buf), "%.1f°C", x);
-                    return std::string(buf);` : ''}
-${hasCalendarScreen ? `              - lvgl.label.update:
-                  id: lbl_cal_temp
                   text: !lambda |-
                     char buf[16];
                     snprintf(buf, sizeof(buf), "%.1f°C", x);
@@ -736,7 +836,7 @@ ${hasMediaScreen ? `  - platform: homeassistant
                     return std::string(buf);` : ''}
 ${uniqueSensors.map(id => `  - platform: homeassistant
     id: ${id.replace(/[^a-zA-Z0-9_]/g, '_')}
-    entity_id: ${id}`).join('\n\n')}
+    entity_id: ${id}${onValueUpdates(bambuNumericUpdates, id)}`).join('\n\n')}
 `;
 
   const binaryBlock = uniqueBinaries.length > 0 ? `
@@ -807,18 +907,6 @@ ${hasHomeScreen ? `              - lvgl.label.update:
                     if (x == "fog") return std::string("Mgła");
                     if (x == "windy") return std::string("Wietrznie");
                     return x;` : ''}
-${hasCalendarScreen ? `              - lvgl.label.update:
-                  id: lbl_cal_weather_desc
-                  text: !lambda |-
-                    if (x == "sunny" || x == "clear-night") return std::string("Słonecznie");
-                    if (x == "partlycloudy") return std::string("Częściowo pochmurno");
-                    if (x == "cloudy") return std::string("Pochmurno");
-                    if (x == "rainy" || x == "pouring") return std::string("Deszcz");
-                    if (x == "lightning" || x == "lightning-rainy") return std::string("Burza");
-                    if (x == "snowy") return std::string("Śnieg");
-                    if (x == "fog") return std::string("Mgła");
-                    if (x == "windy") return std::string("Wietrznie");
-                    return x;` : ''}
 ${hasMediaScreen ? `  # Tytuł utworu z Home Assistant (${mediaEntityId})
   - platform: homeassistant
     id: ha_media_track
@@ -862,7 +950,7 @@ ${hasMediaScreen ? `
                   text: "\\U000F040A"` : ''}
 ${uniqueTexts.map(id => `  - platform: homeassistant
     id: ${id.replace(/[^a-zA-Z0-9_]/g, '_')}
-    entity_id: ${id}`).join('\n\n')}
+    entity_id: ${id}${onValueUpdates(bambuTextUpdates, id)}`).join('\n\n')}
 `;
 
   // 1. Walidacja i rygorystyczna deduplikacja glyphów czcionki Roboto przed generowaniem YAML
@@ -878,6 +966,55 @@ ${uniqueTexts.map(id => `  - platform: homeassistant
   const allMdiGlyphsYaml = uniqueMdiCodes
     .map(g => `      - "${g}"`)
     .join('\n');
+  const calendarEventLabelsYaml = Array.from({ length: 5 }, (_, index) => {
+    const eventIndex = index;
+    const rowY = 42 + eventIndex * 39;
+    const emptyMessage = eventIndex === 0 ? 'Brak nadchodzących wydarzeń' : '';
+    return `              - label:
+                  id: lbl_calendar_event_time_${eventIndex + 1}
+                  x: 14
+                  y: ${rowY}
+                  width: 102
+                  text: "${emptyMessage}"
+                  text_font: font_roboto_14
+                  text_color: 0xFBBF24
+                  long_mode: DOT
+              - label:
+                  id: lbl_calendar_event_title_${eventIndex + 1}
+                  x: 120
+                  y: ${rowY}
+                  width: 180
+                  text: ""
+                  text_font: font_roboto_14
+                  text_color: ${th.textPrimary}
+                  long_mode: DOT`;
+  }).join('\n');
+  const calendarEventUpdateYaml = Array.from({ length: 5 }, (_, index) => {
+    const eventIndex = index;
+    const noEventsText = eventIndex === 0 ? 'Brak nadchodzących wydarzeń' : '';
+    return `              - lvgl.label.update:
+                  id: lbl_calendar_event_time_${eventIndex + 1}
+                  text: !lambda |-
+                    auto events = response["response"][${calendarEntityIdLiteral}]["events"].as<JsonArrayConst>();
+                    if (events.size() <= ${eventIndex}) return std::string("${noEventsText}");
+                    auto start = events[${eventIndex}]["start"].as<std::string>();
+                    char formatted[24];
+                    if (start.length() >= 16) {
+                      snprintf(formatted, sizeof(formatted), "%c%c.%c%c %c%c:%c%c", start[8], start[9], start[5], start[6], start[11], start[12], start[14], start[15]);
+                    } else if (start.length() >= 10) {
+                      snprintf(formatted, sizeof(formatted), "%c%c.%c%c cały dzień", start[8], start[9], start[5], start[6]);
+                    } else {
+                      return std::string("Nieprawidłowa data");
+                    }
+                    return std::string(formatted);
+              - lvgl.label.update:
+                  id: lbl_calendar_event_title_${eventIndex + 1}
+                  text: !lambda |-
+                    auto events = response["response"][${calendarEntityIdLiteral}]["events"].as<JsonArrayConst>();
+                    if (events.size() <= ${eventIndex}) return std::string("");
+                    auto summary = events[${eventIndex}]["summary"].as<std::string>();
+                    return summary.empty() ? std::string("(bez tytułu)") : summary;`;
+  }).join('\n');
 
   return `############################################################
 # ESPHome + Wyświetlacz ST7796 / XPT2046
@@ -909,6 +1046,11 @@ logger:
 api:
   encryption:
     key: ${apiKey}
+${calendarScreen ? `  on_client_connected:
+    then:
+      - delay: 5s
+      - script.execute: refresh_calendar_events
+` : ''}
 
 ota:
   - platform: esphome
@@ -979,6 +1121,10 @@ interval:
             lambda: 'return id(ha_time).now().is_valid();'
           then:
             - script.execute: update_clock_and_date
+${calendarScreen ? `  - interval: 15min
+    startup_delay: 30s
+    then:
+      - script.execute: refresh_calendar_events` : ''}
 ${hasMediaScreen ? `      - lvgl.bar.update:
           id: bar_media_progress
           value: !lambda |-
@@ -1009,24 +1155,28 @@ ${hasHomeScreen ? `      - lvgl.label.update:
             char buf[96];
             snprintf(buf, sizeof(buf), "%s, %d %s", DAYS[w], t.day_of_month, MONTHS[m]);
             return std::string(buf);` : ''}
-${hasCalendarScreen ? `      - lvgl.label.update:
-          id: lbl_cal_clock
-          text: !lambda |-
-            return id(ha_time).now().strftime("%H:%M");
-      - lvgl.label.update:
-          id: lbl_cal_date
-          text: !lambda |-
-            static const char *const DAYS[] = {"Niedziela", "Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek", "Sobota"};
-            static const char *const MONTHS[] = {"stycznia", "lutego", "marca", "kwietnia", "maja", "czerwca", "lipca", "sierpnia", "września", "października", "listopada", "grudnia"};
-            auto t = id(ha_time).now();
-            int w = (t.day_of_week - 1) % 7;
-            if (w < 0) w += 7;
-            int m = (t.month - 1) % 12;
-            if (m < 0) m += 12;
-            char buf[96];
-            snprintf(buf, sizeof(buf), "%s, %d %s", DAYS[w], t.day_of_month, MONTHS[m]);
-            return std::string(buf);` : ''}
-
+${calendarScreen ? `  - id: refresh_calendar_events
+    mode: single
+    then:
+      - homeassistant.action:
+          action: calendar.get_events
+          data_template:
+            entity_id: ${calendarEntityId}
+            start_date_time: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+            end_date_time: "{{ (now() + timedelta(days=365)).strftime('%Y-%m-%d %H:%M:%S') }}"
+          capture_response: true
+          on_success:
+            then:
+${calendarEventUpdateYaml}
+          on_error:
+            then:
+              - logger.log:
+                  level: WARN
+                  tag: calendar
+                  format: "Nie udało się pobrać wydarzeń z ${calendarEntityId}"
+              - lvgl.label.update:
+                  id: lbl_calendar_event_time_1
+                  text: "Błąd pobierania kalendarza"` : ''}
 # ------------------------------------------------------------
 # Czcionki z obsługą polskich znaków i ikon Material Design (MDI)
 # Walidacja pre-kompilacyjna: 0 duplikatów glyphów (ochrona przed 'Found duplicate glyphs')
@@ -1189,20 +1339,30 @@ ${config.screens.map((screen, sIdx) => {
             border_width: 1
             radius: 12
             widgets:
-              - label:
-                  id: lbl_home_clock
+              - obj:
+                  align: LEFT_MID
                   x: 16
-                  y: 8
-                  text: "--:--"
-                  text_font: font_clock_38
-                  text_color: 0xFFFFFF
-              - label:
-                  id: lbl_home_date
-                  x: 16
-                  y: 54
-                  text: "Wczytywanie czasu..."
-                  text_font: font_roboto_14
-                  text_color: ${th.accent}
+                  width: 280
+                  height: 68
+                  bg_opa: TRANSP
+                  border_width: 0
+                  pad_all: 0
+                  scrollable: false
+                  widgets:
+                    - label:
+                        id: lbl_home_clock
+                        x: 0
+                        y: 0
+                        text: "--:--"
+                        text_font: font_clock_38
+                        text_color: 0xFFFFFF
+                    - label:
+                        id: lbl_home_date
+                        x: 0
+                        y: 48
+                        text: "Wczytywanie czasu..."
+                        text_font: font_roboto_14
+                        text_color: ${th.accent}
               - label:
                   id: lbl_home_temp
                   x: 320
@@ -1211,18 +1371,20 @@ ${config.screens.map((screen, sIdx) => {
                   text_font: font_roboto_18
                   text_color: ${th.accent}
               - label:
-                  x: 320
+                  x: 294
                   y: 44
                   text: "\\U000F0599"
                   text_font: font_mdi_20
                   text_color: 0xFBBF24
               - label:
                   id: lbl_home_weather_desc
-                  x: 346
+                  x: 320
                   y: 46
+                  width: 128
                   text: "Moja Lokalizacja"
                   text_font: font_roboto_14
                   text_color: 0xFBBF24
+                  long_mode: SCROLL_CIRCULAR
 
         # Dolna część: 4 Przyciski Obok Siebie (Tekst na górze, ikona MDI na dole)
 ${quickWidgets.map((qw, qIdx) => {
@@ -1249,8 +1411,6 @@ ${quickWidgets.map((qw, qIdx) => {
   const statusLabelId = `lbl_sub_home_${qIdx}`;
   const iconLabelId = `lbl_ico_home_${qIdx}`;
   const safeSub = isSens ? 'Postęp' : qw.entityId?.startsWith('media_player.') ? (isDefaultOn ? 'Odtwarza' : 'Pauza') : (isDefaultOn ? 'WŁ.' : 'WYŁ.');
-  const safeDescription = escapeYamlText(qw.subtitle);
-  const statusY = qw.subtitle?.trim() ? 75 : 42;
   const initSubColor = isSens ? th.accentMuted : (isDefaultOn ? th.accent : '0x64748B');
   const initIcoColor = isDefaultOn ? activeIconColor : '0x64748B';
 
@@ -1267,10 +1427,10 @@ ${quickWidgets.map((qw, qIdx) => {
             border_width: 1
             radius: 12${clickAct}
             widgets:
-              # Dwulinijkowy tytuł i opis
+              # Dwulinijkowy tytuł
               - label:
                   width: 100
-                  height: 36
+                  height: 40
                   align: TOP_MID
                   y: 4
                   text: "${safeTitle}"
@@ -1279,20 +1439,10 @@ ${quickWidgets.map((qw, qIdx) => {
                   text_align: CENTER
                   long_mode: WRAP
               - label:
-                  width: 100
-                  height: 30
-                  align: TOP_MID
-                  y: 42
-                  text: "${safeDescription}"
-                  text_font: font_roboto_12
-                  text_color: ${th.accentMuted}
-                  text_align: CENTER
-                  long_mode: WRAP
-              - label:
                   id: ${statusLabelId}
                   width: 100
                   align: TOP_MID
-                  y: ${statusY}
+                  y: 52
                   text: "${safeSub}"
                   text_font: font_roboto_12
                   text_color: ${initSubColor}
@@ -1318,11 +1468,9 @@ ${screen.widgets.slice(0, 6).map((sw, swIdx) => {
   const y = 6 + r * 124;
   const mdiIcon = getMdiGlyph(sw.icon || 'Lightbulb');
   const safeTitle = escapeYamlText(sw.title);
-  const safeDescription = escapeYamlText(sw.subtitle);
   const isDefaultOn = sw.entityId ? (knownStates[sw.entityId] === 'on' || knownStates[sw.entityId] === 'playing') : false;
   const statusLabelId = `lbl_sub_lights_${swIdx}`;
   const iconLabelId = `lbl_ico_lights_${swIdx}`;
-  const statusY = sw.subtitle?.trim() ? 66 : 38;
   const initStatus = isDefaultOn ? 'WŁ.' : 'WYŁ.';
   const initStatusColor = isDefaultOn ? th.accent : '0x64748B';
   const initIconColor = isDefaultOn ? activeIconColor : '0x64748B';
@@ -1347,7 +1495,7 @@ ${screen.widgets.slice(0, 6).map((sw, swIdx) => {
             widgets:
               - label:
                   width: 138
-                  height: 34
+                  height: 40
                   align: TOP_MID
                   y: 3
                   text: "${safeTitle}"
@@ -1356,20 +1504,10 @@ ${screen.widgets.slice(0, 6).map((sw, swIdx) => {
                   text_align: CENTER
                   long_mode: WRAP
               - label:
-                  width: 138
-                  height: 26
-                  align: TOP_MID
-                  y: 38
-                  text: "${safeDescription}"
-                  text_font: font_roboto_12
-                  text_color: ${th.accentMuted}
-                  text_align: CENTER
-                  long_mode: WRAP
-              - label:
                   id: ${statusLabelId}
                   width: 138
                   align: TOP_MID
-                  y: ${statusY}
+                  y: 48
                   text: "${initStatus}"
                   text_font: font_roboto_12
                   text_color: ${initStatusColor}
@@ -1532,7 +1670,7 @@ ${screen.widgets.slice(0, 6).map((sw, swIdx) => {
                         align: CENTER
                         text: "\\U000F075E"
                         text_font: font_mdi_28
-                        text_color: ${th.accent}
+                        text_color: 0xFFFFFF
               - button:
                   x: 186
                   y: 160
@@ -1554,7 +1692,7 @@ ${screen.widgets.slice(0, 6).map((sw, swIdx) => {
                         align: CENTER
                         text: "\\U000F075F"
                         text_font: font_mdi_28
-                        text_color: ${th.accent}
+                        text_color: 0xFFFFFF
               - button:
                   x: 306
                   y: 160
@@ -1576,11 +1714,12 @@ ${screen.widgets.slice(0, 6).map((sw, swIdx) => {
                         align: CENTER
                         text: "\\U000F075D"
                         text_font: font_mdi_28
-                        text_color: ${th.accent}
+                        text_color: 0xFFFFFF
               - label:
                   id: lbl_media_volume
                   align: TOP_MID
                   y: 218
+                  text_align: CENTER
                   text: "Głośność: --%"
                   text_font: font_roboto_14
                   text_color: ${th.accentMuted}`;
@@ -1616,7 +1755,7 @@ ${screen.widgets.slice(0, 6).map((sw, swIdx) => {
               - label:
                   x: 38
                   y: 12
-                  text: "Bambu Lab A1 Mini · esp32_cyd_enclosure.gcode"
+                  text: "Bambu Lab A1 Mini"
                   text_font: font_roboto_14
                   text_color: ${th.accent}
 
@@ -1625,7 +1764,7 @@ ${screen.widgets.slice(0, 6).map((sw, swIdx) => {
             x: 10
             y: 54
             width: 224
-            height: 102
+            height: 132
             scrollable: false
             scrollbar_mode: 'OFF'
             bg_color: ${th.cardBg}
@@ -1648,7 +1787,8 @@ ${screen.widgets.slice(0, 6).map((sw, swIdx) => {
               - label:
                   x: 38
                   y: 10
-                  text: "Postęp: 68%"
+                  id: lbl_bambu_progress
+                  text: "Postęp: --"
                   text_font: font_roboto_14
                   text_color: ${th.accent}
               - label:
@@ -1660,7 +1800,8 @@ ${screen.widgets.slice(0, 6).map((sw, swIdx) => {
               - label:
                   x: 38
                   y: 39
-                  text: "Warstwa: 184 / 270"
+                  id: lbl_bambu_state
+                  text: "Status: --"
                   text_font: font_roboto_14
                   text_color: ${th.textPrimary}
               - label:
@@ -1672,16 +1813,29 @@ ${screen.widgets.slice(0, 6).map((sw, swIdx) => {
               - label:
                   x: 38
                   y: 67
-                  text: "Pozostało: 42 min"
+                  id: lbl_bambu_remaining
+                  text: "Pozostało: --"
                   text_font: font_roboto_14
                   text_color: ${th.accentMuted}
+              - bar:
+                  id: bar_bambu_progress
+                  x: 38
+                  y: 96
+                  width: 174
+                  height: 12
+                  min_value: 0
+                  max_value: 100
+                  value: 0
+                  bg_color: ${th.cardBorder}
+                  indicator:
+                    bg_color: ${th.accent}
 
         # Karta Temperatur
         - obj:
             x: 246
             y: 54
             width: 224
-            height: 102
+            height: 132
             scrollable: false
             scrollbar_mode: 'OFF'
             bg_color: ${th.cardBg}
@@ -1705,7 +1859,8 @@ ${screen.widgets.slice(0, 6).map((sw, swIdx) => {
               - label:
                   x: 36
                   y: 10
-                  text: "Dysza: 220°C / 220°C"
+                  id: lbl_bambu_nozzle
+                  text: "Dysza: --"
                   text_font: font_roboto_14
                   text_color: 0xFB923C
               # Stół
@@ -1718,7 +1873,8 @@ ${screen.widgets.slice(0, 6).map((sw, swIdx) => {
               - label:
                   x: 36
                   y: 38
-                  text: "Stół: 60°C / 60°C"
+                  id: lbl_bambu_bed
+                  text: "Stół: --"
                   text_font: font_roboto_14
                   text_color: 0xFBBF24
               # Wentylator
@@ -1731,16 +1887,17 @@ ${screen.widgets.slice(0, 6).map((sw, swIdx) => {
               - label:
                   x: 36
                   y: 66
-                  text: "Wentylator: 100%"
+                  id: lbl_bambu_fan
+                  text: "Wentylator: --"
                   text_font: font_roboto_14
                   text_color: ${th.accent}
 
-        # Dolny pasek parametrów druku z ikonami
+        # Nazwa drukowanego modelu
         - obj:
             x: 10
-            y: 162
+            y: 194
             width: 460
-            height: 86
+            height: 54
             scrollable: false
             scrollbar_mode: 'OFF'
             bg_color: ${th.cardBg}
@@ -1756,88 +1913,28 @@ ${screen.widgets.slice(0, 6).map((sw, swIdx) => {
             widgets:
               - label:
                   x: 16
-                  y: 10
-                  text: "\\U000F01C9"
+                  y: 17
+                  text: "\\U000F042B"
                   text_font: font_mdi_20
                   text_color: ${th.accent}
               - label:
                   x: 42
-                  y: 11
-                  text: "Status: Drukowanie · Profil: Standard 0.2mm"
+                  y: 18
+                  id: lbl_bambu_job
+                  text: "Brak aktywnego zadania"
                   text_font: font_roboto_14
                   text_color: ${th.textPrimary}
-              - label:
-                  x: 16
-                  y: 44
-                  text: "\\U000F0150"
-                  text_font: font_mdi_20
-                  text_color: ${th.accentMuted}
-              - label:
-                  x: 42
-                  y: 45
-                  text: "Całkowity czas pracy zadania: 1h 24m · Drukarka Online"
-                  text_font: font_roboto_14
-                  text_color: ${th.accentMuted}`;
+                  long_mode: DOT`;
   }
 
-  // 5. STRONA KALENDARZA: Zegar, Aura, Słońce oraz Kalendarz Familijny (5 wydarzeń)
+  // 5. STRONA KALENDARZA: Słońce oraz Kalendarz Familijny (5 wydarzeń)
   else if (screen.id === 'screen_calendar') {
-    pageContent = `        # Karta Zegara i Pogody z Ikonami (Moja Lokalizacja)
+    pageContent = `        # Cykl Słońca (Wschód / Zachód)
         - obj:
             x: 10
             y: 6
-            width: 460
-            height: 64
-            scrollable: false
-            scrollbar_mode: 'OFF'
-            bg_color: ${th.cardBg}
-            bg_opa: COVER
-            border_color: ${th.cardBorder}
-            border_width: 1
-            radius: 12
-            pad_all: 0
-            widgets:
-              - label:
-                  id: lbl_cal_clock
-                  x: 16
-                  y: 8
-                  text: "--:--"
-                  text_font: font_clock_38
-                  text_color: 0xFFFFFF
-              - label:
-                  id: lbl_cal_date
-                  x: 16
-                  y: 44
-                  text: "Wczytywanie..."
-                  text_font: font_roboto_14
-                  text_color: ${th.accent}
-              - label:
-                  id: lbl_cal_temp
-                  x: 320
-                  y: 10
-                  text: "--.-°C"
-                  text_font: font_roboto_18
-                  text_color: ${th.accent}
-              - label:
-                  x: 320
-                  y: 38
-                  text: "\\U000F0599"
-                  text_font: font_mdi_20
-                  text_color: 0xFBBF24
-              - label:
-                  id: lbl_cal_weather_desc
-                  x: 346
-                  y: 39
-                  text: "Moja Lokalizacja"
-                  text_font: font_roboto_14
-                  text_color: 0xFBBF24
-
-        # Cykl Słońca (Wschód / Zachód)
-        - obj:
-            x: 10
-            y: 76
             width: 140
-            height: 176
+            height: 246
             scrollable: false
             scrollbar_mode: 'OFF'
             bg_color: ${th.cardBg}
@@ -1849,37 +1946,37 @@ ${screen.widgets.slice(0, 6).map((sw, swIdx) => {
             widgets:
               - label:
                   align: TOP_MID
-                  y: 10
+                  y: 14
                   text: "Słońce & Zmierzch"
                   text_font: font_roboto_14
                   text_color: ${th.accent}
               - label:
                   x: 14
-                  y: 46
+                  y: 76
                   text: "\\U000F0598"
                   text_font: font_mdi_20
                   text_color: 0xFBBF24
               - label:
                   x: 42
-                  y: 47
+                  y: 77
                   text: "06:14"
                   text_font: font_roboto_14
                   text_color: 0xFBBF24
               - label:
                   x: 14
-                  y: 82
+                  y: 132
                   text: "\\U000F059A"
                   text_font: font_mdi_20
                   text_color: ${th.accentMuted}
               - label:
                   x: 42
-                  y: 83
+                  y: 133
                   text: "18:42"
                   text_font: font_roboto_14
                   text_color: ${th.accentMuted}
               - label:
                   align: BOTTOM_MID
-                  y: -12
+                  y: -16
                   text: "Dzień: 12h 28m"
                   text_font: font_roboto_14
                   text_color: ${th.accentMuted}
@@ -1887,9 +1984,9 @@ ${screen.widgets.slice(0, 6).map((sw, swIdx) => {
         # Kalendarz Familijny (5 nadchodzących wydarzeń)
         - obj:
             x: 156
-            y: 76
+            y: 6
             width: 314
-            height: 176
+            height: 246
             scrollable: false
             scrollbar_mode: 'OFF'
             bg_color: ${th.cardBg}
@@ -1913,75 +2010,7 @@ ${screen.widgets.slice(0, 6).map((sw, swIdx) => {
                   text_font: font_roboto_14
                   text_color: ${th.accent}
 
-              # Wydarzenie 1
-              - label:
-                  x: 14
-                  y: 36
-                  text: "NDZ 14:00"
-                  text_font: font_roboto_14
-                  text_color: 0xFBBF24
-              - label:
-                  x: 95
-                  y: 36
-                  text: "Obiad rodzinny"
-                  text_font: font_roboto_14
-                  text_color: ${th.textPrimary}
-
-              # Wydarzenie 2
-              - label:
-                  x: 14
-                  y: 64
-                  text: "PON 17:30"
-                  text_font: font_roboto_14
-                  text_color: 0x38BDF8
-              - label:
-                  x: 95
-                  y: 64
-                  text: "Trening dzieci / Zajęcia"
-                  text_font: font_roboto_14
-                  text_color: ${th.textPrimary}
-
-              # Wydarzenie 3
-              - label:
-                  x: 14
-                  y: 92
-                  text: "WT 10:15"
-                  text_font: font_roboto_14
-                  text_color: 0xFB7185
-              - label:
-                  x: 95
-                  y: 92
-                  text: "Wizyta u lekarza"
-                  text_font: font_roboto_14
-                  text_color: ${th.textPrimary}
-
-              # Wydarzenie 4
-              - label:
-                  x: 14
-                  y: 120
-                  text: "CZW Cały"
-                  text_font: font_roboto_14
-                  text_color: 0xC084FC
-              - label:
-                  x: 95
-                  y: 120
-                  text: "Urodziny Mamy"
-                  text_font: font_roboto_14
-                  text_color: ${th.textPrimary}
-
-              # Wydarzenie 5
-              - label:
-                  x: 14
-                  y: 148
-                  text: "SOB 09:00"
-                  text_font: font_roboto_14
-                  text_color: 0x34D399
-              - label:
-                  x: 95
-                  y: 148
-                  text: "Wyjazd weekendowy"
-                  text_font: font_roboto_14
-                  text_color: ${th.textPrimary}`;
+${calendarEventLabelsYaml}`;
   }
 
   // 6. EKRANY NIESTANDARDOWE DODANE PRZEZ UŻYTKOWNIKA
@@ -2015,12 +2044,12 @@ ${screen.widgets.slice(0, 6).map((sw, swIdx) => {
         const x = 10 + c * (colW + gapX);
         const y = 6 + r * 124;
         const mdiIcon = getMdiGlyph(cw.icon || 'Sparkles');
-        const safeTitle = escapeYamlText(safeSlice(cw.title, isThreeCols ? 15 : 22));
+        const safeTitle = escapeYamlText(cw.title);
         const isSens = cw.entityId?.startsWith('sensor.');
         const isDefaultOn = cw.entityId ? (knownStates[cw.entityId] === 'on' || knownStates[cw.entityId] === 'playing') : false;
         const statusLabelId = `lbl_sub_custom_${screen.id}_${cwIdx}`;
         const iconLabelId = `lbl_ico_custom_${screen.id}_${cwIdx}`;
-        const initStatus = isSens ? escapeYamlText(safeSlice(cw.subtitle || 'Kafelek', isThreeCols ? 18 : 26)) : (isDefaultOn ? 'WŁ.' : 'WYŁ.');
+        const initStatus = isSens ? 'Sensor' : (isDefaultOn ? 'WŁ.' : 'WYŁ.');
         const initSubColor = isSens ? th.accentMuted : (isDefaultOn ? th.accent : '0x64748B');
         const initIcoColor = isDefaultOn ? activeIconColor : '0x64748B';
 
@@ -2056,13 +2085,17 @@ ${screen.widgets.slice(0, 6).map((sw, swIdx) => {
               - label:
                   align: TOP_MID
                   y: 8
+                  width: ${colW - 16}
+                  height: 38
                   text: "${safeTitle}"
                   text_font: font_roboto_14
                   text_color: ${th.textPrimary}
+                  text_align: CENTER
+                  long_mode: WRAP
               - label:
                   id: ${statusLabelId}
                   align: TOP_MID
-                  y: 30
+                  y: 50
                   text: "${initStatus}"
                   text_font: font_roboto_14
                   text_color: ${initSubColor}
