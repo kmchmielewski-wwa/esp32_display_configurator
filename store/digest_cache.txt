@@ -1,1 +1,1 @@
-ghcr.io/kmchmielewski-wwa/esp32_display_configurator:latest sha256:7dcd453f29570efdcf7dd65219aa512b2c03908b1a338b89a449dd756244007c
+ghcr.io/kmchmielewski-wwa/esp32_display_configurator:latest sha256:89f80991e8debf327fb28b42d1a15d937d8e6bdd2e9cafd1cbe5d10ff73397c7

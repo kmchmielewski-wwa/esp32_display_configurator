@@ -1,6 +1,6 @@
 {
   "id": "org.kmchmielewski.esp32displayconfigurator",
   "title": "Konfigurator wyświetlacza ESP32",
-  "tagline": "Wizualny konfigurator wyświetlacza ESPHome",
-  "description": "Konfiguruj dotykowe wyświetlacze ESP32 z ESPHome za pomocą edytora wizualnego i podglądu."
+  "description": "Konfiguruj dotykowe wyświetlacze ESP32 z ESPHome za pomocą edytora wizualnego i podglądu.",
+  "tagline": "Wizualny konfigurator wyświetlacza ESPHome"
 }

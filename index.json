@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "updated_at": "2026-10-27T19:42:45Z",
+  "updated_at": "2026-10-27T20:05:45Z",
   "app_count": 1,
   "base_url": "https://cdn.jsdelivr.net/gh/kmchmielewski-wwa/esp32_display_configurator@gh-pages",
   "apps": [
@@ -22,7 +22,7 @@
       "thumbnail": "",
       "compose_url": "/apps/org.kmchmielewski.esp32displayconfigurator/docker-compose.yml",
       "meta_url": "/apps/org.kmchmielewski.esp32displayconfigurator/meta.json",
-      "content_hash": "b56d5d6d",
+      "content_hash": "b9c0d3b0",
       "version": "0.0.0"
     }
   ]
