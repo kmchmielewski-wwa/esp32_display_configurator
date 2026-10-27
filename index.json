@@ -1,0 +1,29 @@
+{
+  "version": 2,
+  "updated_at": "2026-10-27T19:42:45Z",
+  "app_count": 1,
+  "base_url": "https://cdn.jsdelivr.net/gh/kmchmielewski-wwa/esp32_display_configurator@gh-pages",
+  "apps": [
+    {
+      "id": "org.kmchmielewski.esp32displayconfigurator",
+      "title": "ESP32 Display Configurator",
+      "tagline": "Visual ESPHome display configurator",
+      "category": "Home",
+      "categories": [
+        "home"
+      ],
+      "author": "kmchmielewski-wwa",
+      "developer": "kmchmielewski-wwa",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ],
+      "icon": "/apps/org.kmchmielewski.esp32displayconfigurator/assets/icon.svg",
+      "thumbnail": "",
+      "compose_url": "/apps/org.kmchmielewski.esp32displayconfigurator/docker-compose.yml",
+      "meta_url": "/apps/org.kmchmielewski.esp32displayconfigurator/meta.json",
+      "content_hash": "b56d5d6d",
+      "version": "0.0.0"
+    }
+  ]
+}

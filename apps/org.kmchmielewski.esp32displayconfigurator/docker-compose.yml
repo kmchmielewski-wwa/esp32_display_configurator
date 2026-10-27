@@ -1,0 +1,21 @@
+name: esp32displayconfigurator
+services:
+  app:
+    image: ghcr.io/kmchmielewski-wwa/esp32_display_configurator:latest
+    container_name: esp32-display-configurator
+    restart: unless-stopped
+    ports:
+      - target: 80
+        published: "8095"
+        protocol: tcp
+x-casaos:
+  id: org.kmchmielewski.esp32displayconfigurator
+  icon: https://cdn.jsdelivr.net/gh/kmchmielewski-wwa/esp32_display_configurator@gh-pages/apps/org.kmchmielewski.esp32displayconfigurator/assets/icon.svg
+  index: /
+  main: app
+  port_map: "8095"
+  scheme: http
+  title:
+    en_US: ESP32 Display Configurator
+    pl_PL: Konfigurator wyświetlacza ESP32
+  version: "0.0.0"

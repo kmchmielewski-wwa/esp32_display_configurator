@@ -1,0 +1,26 @@
+{
+  "architectures": [
+    "amd64",
+    "arm64"
+  ],
+  "author": "kmchmielewski-wwa",
+  "category": "Home",
+  "description": "Configure ESP32 ESPHome touch displays with a visual editor and preview.",
+  "developer": "kmchmielewski-wwa",
+  "tagline": "Visual ESPHome display configurator",
+  "website": "https://github.com/kmchmielewski-wwa/esp32_display_configurator",
+  "repo": "https://github.com/kmchmielewski-wwa/esp32_display_configurator",
+  "support": "https://github.com/kmchmielewski-wwa/esp32_display_configurator/issues",
+  "title": "ESP32 Display Configurator",
+  "base_url": "https://cdn.jsdelivr.net/gh/kmchmielewski-wwa/esp32_display_configurator@gh-pages",
+  "id": "org.kmchmielewski.esp32displayconfigurator",
+  "version": "0.0.0",
+  "categories": [
+    "home"
+  ],
+  "min_memory": 0,
+  "min_image_size": {
+    "amd64": 26199646,
+    "arm64": 26107012
+  }
+}

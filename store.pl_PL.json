@@ -1,0 +1,5 @@
+{
+  "store_id": "esp32-display-configurator",
+  "name": "Konfigurator wyświetlacza ESP32",
+  "description": "Sklep CasaOS z konfiguratorem dotykowego wyświetlacza ESP32 ESPHome."
+}

@@ -1,0 +1,9 @@
+{
+  "apps": [
+    {
+      "id": "org.kmchmielewski.esp32displayconfigurator",
+      "title": "Konfigurator wyświetlacza ESP32",
+      "tagline": "Wizualny konfigurator wyświetlacza ESPHome"
+    }
+  ]
+}

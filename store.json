@@ -1,0 +1,8 @@
+{
+  "version": 2,
+  "store_id": "esp32-display-configurator",
+  "name": "ESP32 Display Configurator",
+  "description": "A CasaOS app store for the ESP32 ESPHome Touch Display Configurator.",
+  "maintainer": "kmchmielewski-wwa",
+  "url": "https://github.com/kmchmielewski-wwa/esp32_display_configurator"
+}
